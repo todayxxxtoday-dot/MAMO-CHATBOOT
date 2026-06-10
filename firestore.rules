@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Reusable, secure global helper functions
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+
+    // 1. Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Products Collection Rules
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isSignedIn() && isValidId(productId);
+    }
+
+    // 3. Conversations Collection Rules
+    match /conversations/{conversationId} {
+      // Allow customers and admin to fetch single chats by ID
+      allow get: if isValidId(conversationId);
+      // Strictly prevent unauthorized listing of chats - only authenticated merchants can search/list
+      allow list: if isSignedIn();
+      // Allow any visitor to create a chat or log messages
+      allow create, update: if isValidId(conversationId);
+    }
+
+    // 4. Settings Collection Rules
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isSignedIn() && isValidId(settingId);
+    }
+  }
+}

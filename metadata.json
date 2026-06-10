@@ -1,0 +1,6 @@
+{
+  "name": "متجر الأجهزة المنزلية",
+  "description": "تطبيق متجر أجهزة منزلية وكهربائية يشتمل على شات ذكي للعملاء ولوحة تحكم متكاملة لإدارة التاجر.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

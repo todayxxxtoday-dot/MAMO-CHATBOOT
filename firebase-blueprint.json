@@ -1,0 +1,108 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A home appliance or electronic product available in the store",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Product name in Arabic"
+        },
+        "category": {
+          "type": "string",
+          "description": "Product category (e.g. refrigerators, washing machines, tvs)"
+        },
+        "brand": {
+          "type": "string",
+          "description": "Brand of the appliance"
+        },
+        "price": {
+          "type": "number",
+          "description": "Price in store currency (e.g., SAR / EGP)"
+        },
+        "quantity": {
+          "type": "integer",
+          "description": "Available stock quantity"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed product description"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL to the product image"
+        },
+        "isAvailable": {
+          "type": "boolean",
+          "description": "Whether the product is currently in stock and available for sale"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["name", "category", "brand", "price", "quantity", "description", "imageUrl", "isAvailable"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Chat log between a customer and the AI bot, saved to the database",
+      "type": "object",
+      "properties": {
+        "customerName": {
+          "type": "string",
+          "description": "Display name or temporary identifier of the customer"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the conversation: active, resolved, or pending",
+          "enum": ["active", "resolved", "pending"]
+        },
+        "messages": {
+          "type": "array",
+          "description": "The sequence of messages exchanged in this conversation"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["customerName", "status", "messages", "createdAt", "updatedAt"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "General settings configuration for the store",
+      "type": "object",
+      "properties": {
+        "storeName": {
+          "type": "string"
+        },
+        "welcomeMessage": {
+          "type": "string"
+        },
+        "currency": {
+          "type": "string"
+        }
+      },
+      "required": ["storeName", "welcomeMessage", "currency"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Inventory of products in the store"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "UserConversation",
+      "description": "Customer chat history logs with state"
+    },
+    "/settings/{settingId}": {
+      "schema": "Setting",
+      "description": "General settings configuration"
+    }
+  }
+}
