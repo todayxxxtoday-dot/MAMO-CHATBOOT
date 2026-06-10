@@ -62,19 +62,7 @@ export default function App() {
 
   if (currentPath === '/chat') {
     return (
-      <div className="relative">
-        <ChatPage />
-        {/* Floating access-admin button exclusively for preview testing convenience */}
-        <div className="fixed bottom-24 left-4 z-50">
-          <button
-            onClick={() => navigateTo('/admin')}
-            className="px-3 py-1.5 bg-white border border-gray-200 text-black rounded text-xs font-bold shadow hover:bg-gray-50 transition-colors cursor-pointer flex items-center gap-1.5"
-          >
-            <ShieldAlert className="w-3.5 h-3.5 text-black" />
-            <span>لوحة التاجر</span>
-          </button>
-        </div>
-      </div>
+      <ChatPage />
     );
   }
 
@@ -154,14 +142,14 @@ export default function App() {
         >
           <div className="bg-white p-3 border border-gray-200 rounded-lg shrink-0 shadow-inner relative">
             <img 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/chat')}&color=${(settings?.botPrimaryColor || '#000000').replace('#', '')}&bgcolor=ffffff&qzone=1`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/chat')}&color=${(settings?.botPrimaryColor || '#800020').replace('#', '')}&bgcolor=ffffff&qzone=1`}
               alt="Store Chatbot Barcode"
               className="w-28 h-28 object-contain"
             />
             {/* Mini core design color dot in center */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-4 h-4 bg-white border p-0.5 rounded shadow-xs" style={{ borderColor: settings?.botPrimaryColor || '#000000' }}>
-                <div className="w-full h-full rounded-xs" style={{ backgroundColor: settings?.botPrimaryColor || '#000000' }} />
+              <div className="w-4 h-4 bg-white border p-0.5 rounded shadow-xs" style={{ borderColor: settings?.botPrimaryColor || '#800020' }}>
+                <div className="w-full h-full rounded-xs" style={{ backgroundColor: settings?.botPrimaryColor || '#800020' }} />
               </div>
             </div>
           </div>
@@ -172,13 +160,13 @@ export default function App() {
             </div>
             <h3 className="text-sm font-bold text-gray-900 font-sans">امسح الباركود لتجربة الشات بوت فوراً على الهاتف</h3>
             <p className="text-xs text-gray-500 leading-relaxed font-sans">
-              عند تصوير هذا الباركود بآلة تصوير الجوال، ستفتح لك نافذة المحادثة الذكية لـ <strong style={{ color: settings?.botPrimaryColor || '#000000' }}>{settings?.storeName ?? 'المتجر الذكي للأجهزة المنزلية'}</strong> مباشرة المخصصة للتصفح والاستفسار عن الأسعار دون الدخول إلى لوحة التحكم.
+              عند تصوير هذا الباركود بآلة تصوير الجوال، ستفتح لك نافذة المحادثة الذكية لـ <strong style={{ color: settings?.botPrimaryColor || '#800020' }}>{settings?.storeName ?? 'المتجر الذكي للأجهزة المنزلية'}</strong> مباشرة المخصصة للتصفح والاستفسار عن الأسعار دون الدخول إلى لوحة التحكم.
             </p>
             <div className="pt-1.5 flex justify-end md:justify-start">
               <button
                 onClick={() => navigateTo('/chat')}
                 className="text-[11px] font-bold text-white px-3.5 py-2 rounded transition-all hover:opacity-90 flex items-center gap-1.5 inline-flex cursor-pointer font-sans"
-                style={{ backgroundColor: settings?.botPrimaryColor || '#000000' }}
+                style={{ backgroundColor: settings?.botPrimaryColor || '#800020' }}
               >
                 <MessageSquare className="w-3.5 h-3.5" />
                 <span>فتح صفحة الشات بوت المباشر</span>

@@ -49,7 +49,7 @@ export default function AdminPage() {
   const [whatsappValue, setWhatsappValue] = useState('');
   const [contactNumberValue, setContactNumberValue] = useState('');
   const [emailValue, setEmailValue] = useState('');
-  const [botPrimaryColorValue, setBotPrimaryColorValue] = useState('#000000');
+  const [botPrimaryColorValue, setBotPrimaryColorValue] = useState('#800020');
   const [botTextColorValue, setBotTextColorValue] = useState('#ffffff');
   const [botInstructionsValue, setBotInstructionsValue] = useState('');
   const [botWelcomeMessageValue, setBotWelcomeMessageValue] = useState('');
@@ -159,7 +159,7 @@ export default function AdminPage() {
         setWhatsappValue(data.whatsapp || '');
         setContactNumberValue(data.contactNumber || '');
         setEmailValue(data.email || '');
-        setBotPrimaryColorValue(data.botPrimaryColor || '#000000');
+        setBotPrimaryColorValue(data.botPrimaryColor || '#800020');
         setBotTextColorValue(data.botTextColor || '#ffffff');
         setBotInstructionsValue(data.botInstructions || '');
         setBotWelcomeMessageValue(data.botWelcomeMessage || '');
@@ -171,7 +171,7 @@ export default function AdminPage() {
         setWhatsappValue('966500000000');
         setContactNumberValue('966500000000');
         setEmailValue('info@store.com');
-        setBotPrimaryColorValue('#10B981');
+        setBotPrimaryColorValue('#800020');
         setBotTextColorValue('#ffffff');
         setBotWelcomeMessageValue('مرحباً بك في متجر الأجهزة المنزلية والكهربائية الذكي! كيف يمكنني مساعدتكم اليوم في تصفح الأجهزة المتوفرة والأسعار؟');
         setBotInstructionsValue('يرجى الالتزام بالرد على الأسئلة المتعلقة بأسعار وتوفر الأجهزة المنزلية، وتجنب الإجابة على أي أسئلة خارج نطاق ذلك.');
@@ -1244,7 +1244,7 @@ export default function AdminPage() {
                             type="text"
                             value={botPrimaryColorValue}
                             onChange={(e) => setBotPrimaryColorValue(e.target.value)}
-                            placeholder="#000000"
+                            placeholder="#800020"
                             className={`w-full px-3 py-1.5 border rounded text-xs focus:outline-none transition-all font-mono uppercase ${
                               darkMode 
                                 ? 'bg-zinc-950 border-zinc-800 text-zinc-150 focus:border-zinc-700' 
