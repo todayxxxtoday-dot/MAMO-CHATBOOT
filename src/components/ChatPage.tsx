@@ -34,12 +34,25 @@ export default function ChatPage() {
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string>('');
   const [custNum] = useState(() => Math.floor(Math.random() * 899 + 100));
-  const [customerId, setCustomerId] = useState<string>('');
+  const [customerId, setCustomerId] = useState<string>(() => {
+    return localStorage.getItem('mamu_customer_name') || '';
+  });
+  const [isCollectingName, setIsCollectingName] = useState<boolean>(() => {
+    return !localStorage.getItem('mamu_customer_name');
+  });
   const [settings, setSettings] = useState<any>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const DEFAULT_GREETING = 'مية أهلاً وسهلاً فيك بشركة مامو للأجهزة المنزلية والكهربائية! كيف بقدر ساعدك اليوم بتصفح الأجهزة المتوفرة والأسعار؟';
+  const getGreeting = (name?: string, currentSettings?: any) => {
+    const bType = currentSettings?.businessType || 'شركة';
+    const sName = currentSettings?.storeName || 'الأجهزة المنزلية والكهربائية';
+    const activeName = name || localStorage.getItem('mamu_customer_name');
+    if (activeName && !activeName.startsWith('عميل #')) {
+      return `أهلاً ومرحباً بكم مجدداً يا ${activeName} في ${bType === 'شركة' ? 'شركة' : 'متجر'} ${sName}. يسعدنا الرد على استفساراتكم ومساعدتكم في تصفح الأجهزة المتوفرة وأسعارها الآن. كيف يمكنني مساعدتكم اليوم؟`;
+    }
+    return `أهلاً وسهلاً بكم في ${bType === 'شركة' ? 'شركة' : 'متجر'} ${sName} للأجهزة المنزلية والكهربائية. يسعدنا الرد على استفساراتكم ومساعدتكم في تصفح الأجهزة المتوفرة وأسعارها المتجددة الآن. قبل أن نبدأ، هل تفضلتم بكتابة اسمكم الكريم لنتمكن من مناداتكم به ومساعدتكم بشكل مخصص ومنظم؟`;
+  };
 
   // Listen to Settings from Firestore
   useEffect(() => {
@@ -50,9 +63,10 @@ export default function ChatPage() {
         setSettings(data);
         setMessages((prev) => {
           if (prev.length === 0) {
+            const savedName = localStorage.getItem('mamu_customer_name') || '';
             return [{
               sender: 'bot',
-              text: data.botWelcomeMessage || DEFAULT_GREETING,
+              text: data.botWelcomeMessage || getGreeting(savedName, data),
               timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
             }];
           }
@@ -61,9 +75,10 @@ export default function ChatPage() {
       } else {
         setMessages((prev) => {
           if (prev.length === 0) {
+            const savedName = localStorage.getItem('mamu_customer_name') || '';
             return [{
               sender: 'bot',
-              text: DEFAULT_GREETING,
+              text: getGreeting(savedName, null),
               timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
             }];
           }
@@ -76,9 +91,10 @@ export default function ChatPage() {
       setLoadingSettings(false);
       setMessages((prev) => {
         if (prev.length === 0) {
+          const savedName = localStorage.getItem('mamu_customer_name') || '';
           return [{
             sender: 'bot',
-            text: DEFAULT_GREETING,
+            text: getGreeting(savedName, null),
             timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
           }];
         }
@@ -94,12 +110,20 @@ export default function ChatPage() {
     const uniqueConvId = `CH-${Date.now().toString().slice(-6)}-${randomId}`;
     
     setConversationId(uniqueConvId);
-    setCustomerId(`عميل #${custNum}`);
+    
+    const savedName = localStorage.getItem('mamu_customer_name');
+    if (savedName) {
+      setCustomerId(savedName);
+      setIsCollectingName(false);
+    } else {
+      setCustomerId(`عميل #${custNum}`);
+      setIsCollectingName(true);
+    }
     
     // Clear messages and set default greeting
     setMessages([{
       sender: 'bot',
-      text: customGreeting || settings?.botWelcomeMessage || DEFAULT_GREETING,
+      text: customGreeting || settings?.botWelcomeMessage || getGreeting(savedName || undefined, settings),
       timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
     }]);
   };
@@ -108,9 +132,16 @@ export default function ChatPage() {
   useEffect(() => {
     const randomId = Math.random().toString(36).substring(2, 10).toUpperCase();
     const uniqueConvId = `CH-${Date.now().toString().slice(-6)}-${randomId}`;
-    
     setConversationId(uniqueConvId);
-    setCustomerId(`عميل #${custNum}`);
+    
+    const savedName = localStorage.getItem('mamu_customer_name');
+    if (savedName) {
+      setCustomerId(savedName);
+      setIsCollectingName(false);
+    } else {
+      setCustomerId(`عميل #${custNum}`);
+      setIsCollectingName(true);
+    }
   }, [custNum]);
 
   // Archive current chat and start fresh
@@ -160,12 +191,12 @@ export default function ChatPage() {
   }, [messages, isBotTyping]);
 
   // Sync state to Firebase doc
-  const syncConversationToFirestore = async (updatedMessages: Message[]) => {
+  const syncConversationToFirestore = async (updatedMessages: Message[], activeName?: string) => {
     if (!conversationId) return;
     try {
       const convRef = doc(db, 'conversations', conversationId);
       const payload = {
-        customerName: customerId,
+        customerName: activeName || customerId,
         status: 'pending',
         messages: updatedMessages,
         createdAt: new Date().toISOString(),
@@ -188,16 +219,16 @@ export default function ChatPage() {
     if (type === 'whatsapp') {
       const waNumber = settings.whatsapp || '966500000000';
       const cleanNum = waNumber.replace(/\+/g, '').replace(/[\s-]/g, '');
-      userText = '💬 بدي رابط التواصل والتحويل السريع للواتساب';
-      botText = `تكرم عيونك يا غالي، فيك تتواصل معنا مباشرة وتنسق طلباتك على الواتساب من خلال هاد الرابط للتحويل المباشر:\n\n👉 https://wa.me/${cleanNum}\n\nأو فيك تحفظ الرقم المباشر للواتساب وتراسلنا عليه بأي وقت: ${waNumber}`;
+      userText = '💬 أرغب في الحصول على رابط التواصل السريع وتوجيهي للواتساب مباشرة';
+      botText = `يسعدنا تواصلكم معنا وتنسيق طلباتكم واستفساراتكم مباشرة عبر تطبيق واتساب بالضغط على الرابط التالي للتحويل المباشر:\n\n👉 https://wa.me/${cleanNum}\n\nأو يمكنكم حفظ الرقم المباشر للواتساب لدينا للمراسلة لاحقاً: ${waNumber}`;
     } else if (type === 'phone') {
       const phoneNum = settings.contactNumber || '966500000000';
-      userText = '📞 بدي رقم الهاتف للاتصال المباشر بالشركة';
-      botText = `يا هلا فيك! ويسعدنا اتصالك الهاتفي المباشر معنا للاستفسار أو الدعم على هاد الرقم:\n\n☎️ ${phoneNum}`;
+      userText = '📞 أرغب في معرفة رقم الهاتف المباشر للاتصال بكم';
+      botText = `أهلاً ومرحباً بكم. نسعد باتصالكم الهاتفي المباشر بنا للاستفسار أو الدعم الفني والمبيعات عبر الرقم التالي:\n\n☎️ ${phoneNum}`;
     } else if (type === 'location') {
       const loc = settings.location || 'الرياض، المملكة العربية السعودية';
-      userText = '📍 بدي أعرف موقع الشركة الجغرافي وعنوانها الرئيسي';
-      botText = `عنوان وموقع شركتنا الرئيسي هو:\n\n🏢 ${loc}\n\nبتشرفنا بأي وقت ويسعدنا كتير حضورك!`;
+      userText = '📍 أرغب في معرفة موقع الشركة الجغرافي وعنوانها الرئيسي';
+      botText = `العنوان والموقع الرئيسي لدينا هو:\n\n🏢 ${loc}\n\nنسعد بزيارتكم وتشريفكم لنا في أي وقت خلال أوقات العمل الرسمية.`;
     }
 
     const userMessage: Message = {
@@ -235,9 +266,42 @@ export default function ChatPage() {
     e.preventDefault();
     if (!inputText.trim()) return;
 
+    const typedText = inputText.trim();
+
+    if (isCollectingName) {
+      const name = typedText;
+      localStorage.setItem('mamu_customer_name', name);
+      setCustomerId(name);
+      setIsCollectingName(false);
+
+      const userMessage: Message = {
+        sender: 'user',
+        text: name,
+        timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      const bType = settings?.businessType || 'شركة';
+      const sName = settings?.storeName || 'الأجهزة المنزلية والكهربائية';
+      const welcomeBackMessage = `أهلاً ومرحباً بك يا ${name}. تشرفنا بمعرفتك. كيف يمكنني مساعدتك اليوم في تصفح الأجهزة الكهربائية والمنزلية في ${bType === 'شركة' ? 'شركة' : 'متجر'} ${sName} والتعرف على أسعارها؟`;
+
+      const botMessage: Message = {
+        sender: 'bot',
+        text: welcomeBackMessage,
+        timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      const newMessages = [...messages, userMessage, botMessage];
+      setMessages(newMessages);
+      setInputText('');
+      
+      // Update with new customerName directly on Firestore
+      await syncConversationToFirestore(newMessages, name);
+      return;
+    }
+
     const userMessage: Message = {
       sender: 'user',
-      text: inputText.trim(),
+      text: typedText,
       timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
     };
 
@@ -310,7 +374,7 @@ export default function ChatPage() {
           )}
           <div>
             <h1 className="text-sm sm:text-base font-bold tracking-tight text-gray-900 leading-tight">
-              {settings?.storeName || 'شركة مامو للأجهزة المنزلية والكهربائية'}
+              {settings?.storeName || 'شركة الأجهزة الكهربائية والمنزلية'}
             </h1>
             <p className="text-[11px] text-gray-400 font-medium">مستشار الرد الآلي والمبيعات المباشر على مدار الساعة</p>
           </div>
@@ -343,7 +407,7 @@ export default function ChatPage() {
               <button 
                 onClick={() => simulateContactInfo('location')}
                 disabled={isBotTyping}
-                title="موقع الشركة وعنواننا"
+                title="موقعنا وعنواننا"
                 className="w-8 h-8 rounded-full flex items-center justify-center bg-amber-50 text-amber-600 hover:bg-amber-100/80 active:scale-95 transition-all cursor-pointer disabled:opacity-40 border border-amber-100/50"
               >
                 <MapPin className="w-4 h-4 shrink-0" />
@@ -357,62 +421,28 @@ export default function ChatPage() {
             {/* Archive Chat button */}
             <button
               onClick={handleArchiveChat}
-              title="أرشفة المحادثة الحالية"
-              className="w-8 h-8 rounded-full flex items-center justify-center bg-amber-50 text-amber-600 hover:bg-amber-100 active:scale-95 transition-all border border-amber-200/60 cursor-pointer shadow-2xs"
+              title="أرشفة المحادثة وبدء جديد"
+              className="p-1.5 px-3 text-[11px] font-bold text-gray-500 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-all flex items-center gap-1 cursor-pointer"
             >
-              <Archive className="w-4 h-4 shrink-0" />
+              <Archive className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">أرشفة وبدء محادثة جديدة</span>
             </button>
 
             {/* Delete Chat button */}
             <button
               onClick={handleDeleteChat}
-              title="حذف المحادثة وبدء جلسة جديدة"
-              className="w-8 h-8 rounded-full flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 transition-all border border-red-200/60 cursor-pointer shadow-2xs"
+              title="حذف المحادثة وبدء جديد"
+              className="p-1.5 px-3 text-[11px] font-bold text-red-500 bg-red-50/50 border border-red-150 rounded-lg hover:bg-red-50 hover:text-red-700 transition-all flex items-center gap-1 cursor-pointer text-right"
             >
-              <Trash2 className="w-4 h-4 shrink-0" />
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">مسح المحادثة وحذفها</span>
             </button>
-
-            <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shrink-0" title="نشط الآن" />
-            <span className="text-[10px] text-gray-400 font-mono hidden lg:inline bg-neutral-50 px-2 py-0.5 rounded border border-neutral-150" dir="ltr">{conversationId}</span>
           </div>
         </div>
       </header>
 
       {/* Messaging Panel */}
       <main className="flex-1 overflow-y-auto px-4 py-8 md:px-8 max-w-4xl w-full mx-auto space-y-4 bg-gray-50/50">
-        {/* Onboarding / Identification Card */}
-        <div className="bg-white border border-gray-200/80 p-4 rounded-xl shadow-xs text-right space-y-2.5 transition-all">
-          <p className="text-xs text-gray-600 leading-relaxed font-semibold">
-            👤 يمكنك كتابة اسم أو كنيتك للتواصل معك أو ترك رقم هاتفك للتواصل معك فيما بعد:
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input 
-              type="text"
-              placeholder="اكتب اسمك، كنيتك، أو رقم هاتفك هنا..."
-              value={customerId.startsWith('عميل #') ? '' : customerId}
-              onChange={async (e) => {
-                const val = e.target.value.trim();
-                const newId = val ? val : `عميل #${custNum}`;
-                setCustomerId(newId);
-                if (conversationId) {
-                  try {
-                    const convRef = doc(db, 'conversations', conversationId);
-                    await updateDoc(convRef, { customerName: newId });
-                  } catch (err) {
-                    console.warn("Could not sync name to FireStore:", err);
-                  }
-                }
-              }}
-              className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 focus:bg-white focus:outline-none transition-all placeholder-gray-400 text-gray-900"
-            />
-            {customerId && !customerId.startsWith('عميل #') && (
-              <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2.5 py-1.5 rounded-lg flex items-center justify-center border border-green-100 shrink-0">
-                ✓ مسجّل باسم: {customerId}
-              </span>
-            )}
-          </div>
-        </div>
-
         <AnimatePresence initial={false}>
           {messages.map((msg, index) => {
             const isUser = msg.sender === 'user';
@@ -548,7 +578,7 @@ export default function ChatPage() {
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="اكتب سؤالك هنا عن الأجهزة المتوفرة والأسعار الحالية..."
+              placeholder={isCollectingName ? "فضلاً اكتب اسمك الكريم هنا والمس تفعيل/إرسال..." : "اكتب سؤالك هنا عن الأجهزة المتوفرة والأسعار الحالية..."}
               className="flex-1 px-4.5 py-3.5 bg-[#F0F2F5] border border-transparent rounded-[22px] text-sm focus:outline-none focus:ring-1 focus:ring-neutral-300 focus:bg-white focus:border-gray-300 text-gray-900 transition-all placeholder-gray-400"
               disabled={isBotTyping}
             />

@@ -44,6 +44,7 @@ export default function AdminPage() {
 
   // Firestore states: Settings
   const [storeNameValue, setStoreNameValue] = useState('');
+  const [businessTypeValue, setBusinessTypeValue] = useState<'متجر' | 'شركة'>('شركة');
   const [currencyValue, setCurrencyValue] = useState<'ليرة سورية' | 'دولار' | 'ر.س'>('ليرة سورية');
   const [logoUrlValue, setLogoUrlValue] = useState('');
   const [locationValue, setLocationValue] = useState('');
@@ -158,6 +159,7 @@ export default function AdminPage() {
       if (snapshot.exists()) {
         const data = snapshot.data();
         setStoreNameValue(data.storeName || '');
+        setBusinessTypeValue(data.businessType || 'شركة');
         setCurrencyValue(data.currency || 'ليرة سورية');
         setLogoUrlValue(data.logoUrl || '');
         setLocationValue(data.location || '');
@@ -174,6 +176,7 @@ export default function AdminPage() {
       } else {
         // Instantiate defaults if settings doesn't exist
         setStoreNameValue('شركة مامو للأجهزة المنزلية والكهربائية');
+        setBusinessTypeValue('شركة');
         setCurrencyValue('ليرة سورية');
         setLogoUrlValue('');
         setLocationValue('الرياض، المملكة العربية السعودية');
@@ -204,6 +207,7 @@ export default function AdminPage() {
       const docRef = doc(db, 'settings', 'store');
       await setDoc(docRef, {
         storeName: storeNameValue.trim(),
+        businessType: businessTypeValue,
         logoUrl: logoUrlValue.trim(),
         location: locationValue.trim(),
         whatsapp: whatsappValue.trim(),
@@ -219,7 +223,7 @@ export default function AdminPage() {
         currency: currencyValue,
         updatedAt: new Date().toISOString()
       });
-      alert('تم حفظ إعدادات المتجر والشات بوت بنجاح!');
+      alert('تم حفظ إعدادات المنشأة والشات بوت بنجاح!');
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, 'settings/store');
     } finally {
@@ -1160,17 +1164,33 @@ export default function AdminPage() {
                   }`}>
                     <h3 className="text-xs font-bold font-sans uppercase tracking-wider flex items-center gap-2 text-zinc-500">
                       <span className="w-1.5 h-3 bg-indigo-500 rounded-full" />
-                      <span>🛒 هوية المتجر والبيانات الأساسية</span>
+                      <span>🛒 هوية {businessTypeValue === 'شركة' ? 'الشركة' : 'المتجر'} والبيانات الأساسية</span>
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
-                        <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>اسم المتجر الحالي</label>
+                        <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>نوع المنشأة</label>
+                        <select
+                          value={businessTypeValue}
+                          onChange={(e) => setBusinessTypeValue(e.target.value as 'شركة' | 'متجر')}
+                          className={`w-full px-3 py-2 border rounded text-xs focus:outline-none transition-all cursor-pointer ${
+                            darkMode 
+                              ? 'bg-zinc-950 border-zinc-800 text-zinc-150 focus:border-zinc-700' 
+                              : 'bg-white border-gray-200 text-gray-950 focus:border-black'
+                          }`}
+                        >
+                          <option value="شركة">شركة</option>
+                          <option value="متجر">متجر</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>اسم {businessTypeValue === 'شركة' ? 'الشركة' : 'المتجر'}</label>
                         <input
                           type="text"
                           value={storeNameValue}
                           onChange={(e) => setStoreNameValue(e.target.value)}
-                          placeholder="مثال: متجر الأجهزة الكهربائية الذكي"
+                          placeholder={businessTypeValue === 'شركة' ? "مثال: شركة مامو للأجهزة المنزلية" : "مثال: متجر الأدوات الذكي"}
                           className={`w-full px-3 py-2 border rounded text-xs focus:outline-none transition-all ${
                             darkMode 
                               ? 'bg-zinc-950 border-zinc-800 text-zinc-150 focus:border-zinc-700' 
@@ -1181,7 +1201,7 @@ export default function AdminPage() {
                       </div>
 
                       <div>
-                        <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>شعار المتجر (رابط الصورة)</label>
+                        <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>رابط شعار {businessTypeValue === 'شركة' ? 'الشركة' : 'المتجر'}</label>
                         <input
                           type="url"
                           value={logoUrlValue}
@@ -1196,7 +1216,7 @@ export default function AdminPage() {
                       </div>
 
                       <div>
-                        <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>العملة المعتمدة للمتجر</label>
+                        <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>العملة المحلية المعتمدة</label>
                         <select
                           value={currencyValue}
                           onChange={(e) => setCurrencyValue(e.target.value as any)}
@@ -1214,7 +1234,7 @@ export default function AdminPage() {
                     </div>
 
                     <div>
-                      <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>موقع / عنوان المتجر الرئيسي</label>
+                      <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>موقع / عنوان الفرع الرئيسي</label>
                       <input
                         type="text"
                         value={locationValue}
