@@ -364,7 +364,10 @@ export default function AdminPage() {
     try {
       await deleteDoc(doc(db, 'conversations', id));
       setSelectedConversation(null);
-    } catch (err) {
+      alert('تم حذف المحادثة بنجاح من قاعدة البيانات.');
+    } catch (err: any) {
+      console.error("Delete conversation error:", err);
+      alert('فشل حذف المحادثة: ' + (err?.message || 'خطأ غير معروف في الصلاحيات.'));
       handleFirestoreError(err, OperationType.DELETE, `conversations/${id}`);
     }
   };
@@ -381,8 +384,10 @@ export default function AdminPage() {
       const deletePromises = querySnapshot.docs.map(docSnap => deleteDoc(doc(db, 'conversations', docSnap.id)));
       await Promise.all(deletePromises);
       setSelectedConversation(null);
-      alert('تم تصفير وحذف جميع المحادثات بنجاح!');
-    } catch (err) {
+      alert('تم تصفير وحذف جميع المحادثات بنجاح من الخادم!');
+    } catch (err: any) {
+      console.error("Clear all conversations error:", err);
+      alert('فشل تصفير المحادثات: ' + (err?.message || 'تأكد من صلاحيات الخادم والاتصال بقاعدة البيانات.'));
       handleFirestoreError(err, OperationType.DELETE, 'conversations');
     } finally {
       setLoadingConversations(false);
