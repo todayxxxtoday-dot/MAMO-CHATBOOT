@@ -33,12 +33,13 @@ export default function ChatPage() {
   const [inputText, setInputText] = useState('');
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string>('');
+  const [custNum] = useState(() => Math.floor(Math.random() * 899 + 100));
   const [customerId, setCustomerId] = useState<string>('');
   const [settings, setSettings] = useState<any>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const DEFAULT_GREETING = 'مرحباً بك في شركة مامو للأجهزة المنزلية والكهربائية! كيف يمكنني مساعدتك في تصفح الأجهزة المتوفرة والأسعار اليوم؟';
+  const DEFAULT_GREETING = 'مية أهلاً وسهلاً فيك بشركة مامو للأجهزة المنزلية والكهربائية! كيف بقدر ساعدك اليوم بتصفح الأجهزة المتوفرة والأسعار؟';
 
   // Listen to Settings from Firestore
   useEffect(() => {
@@ -91,7 +92,6 @@ export default function ChatPage() {
   const resetSession = (customGreeting?: string) => {
     const randomId = Math.random().toString(36).substring(2, 10).toUpperCase();
     const uniqueConvId = `CH-${Date.now().toString().slice(-6)}-${randomId}`;
-    const custNum = Math.floor(Math.random() * 899 + 100);
     
     setConversationId(uniqueConvId);
     setCustomerId(`عميل #${custNum}`);
@@ -108,11 +108,10 @@ export default function ChatPage() {
   useEffect(() => {
     const randomId = Math.random().toString(36).substring(2, 10).toUpperCase();
     const uniqueConvId = `CH-${Date.now().toString().slice(-6)}-${randomId}`;
-    const custNum = Math.floor(Math.random() * 899 + 100);
     
     setConversationId(uniqueConvId);
     setCustomerId(`عميل #${custNum}`);
-  }, []);
+  }, [custNum]);
 
   // Archive current chat and start fresh
   const handleArchiveChat = async () => {
@@ -189,16 +188,16 @@ export default function ChatPage() {
     if (type === 'whatsapp') {
       const waNumber = settings.whatsapp || '966500000000';
       const cleanNum = waNumber.replace(/\+/g, '').replace(/[\s-]/g, '');
-      userText = '💬 أريد رابط التواصل والتحويل السريع إلى الواتساب';
-      botText = `تفضل يا فندم، يمكنك التواصل معنا مباشرة وتنسيق الطلبات عبر الواتساب بالضغط على الرابط التالي للتحويل المباشر:\n\n👉 https://wa.me/${cleanNum}\n\nأو يمكنك حفظ وتخزين الرقم المباشر للواتساب لدينا: ${waNumber}`;
+      userText = '💬 بدي رابط التواصل والتحويل السريع للواتساب';
+      botText = `تكرم عيونك يا غالي، فيك تتواصل معنا مباشرة وتنسق طلباتك على الواتساب من خلال هاد الرابط للتحويل المباشر:\n\n👉 https://wa.me/${cleanNum}\n\nأو فيك تحفظ الرقم المباشر للواتساب وتراسلنا عليه بأي وقت: ${waNumber}`;
     } else if (type === 'phone') {
       const phoneNum = settings.contactNumber || '966500000000';
-      userText = '📞 أريد رقم الهاتف للاتصال الهاتفي المباشر بالشركة';
-      botText = `أهلاً بك! نسعد باتصالك الهاتفي المباشر معنا للاستفسار أو الدعم عبر الرقم التالي:\n\n☎️ ${phoneNum}`;
+      userText = '📞 بدي رقم الهاتف للاتصال المباشر بالشركة';
+      botText = `يا هلا فيك! ويسعدنا اتصالك الهاتفي المباشر معنا للاستفسار أو الدعم على هاد الرقم:\n\n☎️ ${phoneNum}`;
     } else if (type === 'location') {
       const loc = settings.location || 'الرياض، المملكة العربية السعودية';
-      userText = '📍 أريد معرفة موقع الشركة الجغرافي وعنوانها الرئيسي';
-      botText = `عنوان وموقع شركتنا الرئيسي هو:\n\n🏢 ${loc}\n\nنرحب بكم ونسعد بتشريفكم لنا في أي وقت!`;
+      userText = '📍 بدي أعرف موقع الشركة الجغرافي وعنوانها الرئيسي';
+      botText = `عنوان وموقع شركتنا الرئيسي هو:\n\n🏢 ${loc}\n\nبتشرفنا بأي وقت ويسعدنا كتير حضورك!`;
     }
 
     const userMessage: Message = {
@@ -373,10 +372,7 @@ export default function ChatPage() {
               <Trash2 className="w-4 h-4 shrink-0" />
             </button>
 
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-green-50 text-green-700 border border-green-250">
-              <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-              <span>نشط الآن</span>
-            </span>
+            <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shrink-0" title="نشط الآن" />
             <span className="text-[10px] text-gray-400 font-mono hidden lg:inline bg-neutral-50 px-2 py-0.5 rounded border border-neutral-150" dir="ltr">{conversationId}</span>
           </div>
         </div>
@@ -384,6 +380,39 @@ export default function ChatPage() {
 
       {/* Messaging Panel */}
       <main className="flex-1 overflow-y-auto px-4 py-8 md:px-8 max-w-4xl w-full mx-auto space-y-4 bg-gray-50/50">
+        {/* Onboarding / Identification Card */}
+        <div className="bg-white border border-gray-200/80 p-4 rounded-xl shadow-xs text-right space-y-2.5 transition-all">
+          <p className="text-xs text-gray-600 leading-relaxed font-semibold">
+            👤 يمكنك كتابة اسم أو كنيتك للتواصل معك أو ترك رقم هاتفك للتواصل معك فيما بعد:
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input 
+              type="text"
+              placeholder="اكتب اسمك، كنيتك، أو رقم هاتفك هنا..."
+              value={customerId.startsWith('عميل #') ? '' : customerId}
+              onChange={async (e) => {
+                const val = e.target.value.trim();
+                const newId = val ? val : `عميل #${custNum}`;
+                setCustomerId(newId);
+                if (conversationId) {
+                  try {
+                    const convRef = doc(db, 'conversations', conversationId);
+                    await updateDoc(convRef, { customerName: newId });
+                  } catch (err) {
+                    console.warn("Could not sync name to FireStore:", err);
+                  }
+                }
+              }}
+              className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 focus:bg-white focus:outline-none transition-all placeholder-gray-400 text-gray-900"
+            />
+            {customerId && !customerId.startsWith('عميل #') && (
+              <span className="text-[10px] font-bold text-green-700 bg-green-50 px-2.5 py-1.5 rounded-lg flex items-center justify-center border border-green-100 shrink-0">
+                ✓ مسجّل باسم: {customerId}
+              </span>
+            )}
+          </div>
+        </div>
+
         <AnimatePresence initial={false}>
           {messages.map((msg, index) => {
             const isUser = msg.sender === 'user';

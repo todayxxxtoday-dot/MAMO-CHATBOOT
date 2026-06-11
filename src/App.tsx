@@ -9,6 +9,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 export default function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [settings, setSettings] = useState<any>(null);
+  const [loadingPage, setLoadingPage] = useState(false);
 
   useEffect(() => {
     const settingsRef = doc(db, 'settings', 'store');
@@ -24,7 +25,12 @@ export default function App() {
 
   useEffect(() => {
     const handleLocationChange = () => {
-      setCurrentPath(window.location.pathname);
+      setLoadingPage(true);
+      const timer = setTimeout(() => {
+        setCurrentPath(window.location.pathname);
+        setLoadingPage(false);
+      }, 550); // beautiful seamless 550ms spinner transition
+      return () => clearTimeout(timer);
     };
 
     window.addEventListener('popstate', handleLocationChange);
@@ -41,145 +47,160 @@ export default function App() {
     window.dispatchEvent(new Event('locationchange'));
   };
 
-  // Route switcher
-  if (currentPath === '/admin') {
-    return (
-      <div className="relative">
-        <AdminPage />
-        {/* Floating return-to-chat button exclusively for preview testing convenience */}
-        <div className="fixed bottom-4 left-4 z-50">
-          <button
-            onClick={() => navigateTo('/chat')}
-            className="px-3 py-1.5 bg-black text-white rounded text-xs font-bold shadow hover:bg-neutral-900 transition-colors cursor-pointer flex items-center gap-1.5"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>عرض شات العميل</span>
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentPath === '/chat') {
-    return (
-      <ChatPage />
-    );
-  }
-
-  // default: Elegantly styled Arabic portal landing page
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12 font-sans selection:bg-neutral-100" dir="rtl">
-      <div className="max-w-xl w-full text-center space-y-8">
-        
-        {/* Brand visual header */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
-        >
-          <div className="inline-flex w-10 h-10 bg-black rounded items-center justify-center mx-auto shadow-sm">
-            <div className="w-5 h-5 border-2 border-white"></div>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">بوابة إدارة والرد الذكي للشركة</h1>
-          <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
-            تطبيق متكامل وبسيط مدعوم بالذكاء الاصطناعي لمتابعة وتحديث مخزون الأواني والأجهزة الكهربائية في الوقت الفعلي.
-          </p>
-        </motion.div>
-
-        {/* Path Selection Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-          
-          {/* Card 1: Chat Client */}
-          <motion.div 
-            whileHover={{ y: -2 }}
-            className="bg-white border border-gray-100 p-6 rounded text-right flex flex-col justify-between hover:border-gray-300 hover:shadow-xs transition-all cursor-pointer"
-            onClick={() => navigateTo('/chat')}
-          >
-            <div className="space-y-2">
-              <div className="w-8 h-8 bg-zinc-100 text-black rounded flex items-center justify-center">
-                <MessageSquare className="w-4 h-4" />
-              </div>
-              <h2 className="text-base font-bold text-gray-900">مساعد خدمة العملاء</h2>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                افتح صفحة الشات للتواصل الفوري وطرح الأسئلة الذكية حول الأجهزة وأسعارها وتوفرها بالشركة.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between text-xs font-bold text-black">
-              <span>بدء المحادثة</span>
-              <span className="font-mono text-[10px] bg-gray-50 px-2 py-0.5 rounded text-gray-500 font-medium" dir="ltr">/chat</span>
-            </div>
-          </motion.div>
-
-          {/* Card 2: Admin Dashboard */}
-          <motion.div 
-            whileHover={{ y: -2 }}
-            className="bg-white border border-gray-100 p-6 rounded text-right flex flex-col justify-between hover:border-gray-300 hover:shadow-xs transition-all cursor-pointer"
-            onClick={() => navigateTo('/admin')}
-          >
-            <div className="space-y-2">
-              <div className="w-8 h-8 bg-black text-white rounded flex items-center justify-center">
-                <ShieldAlert className="w-4 h-4" />
-              </div>
-              <h2 className="text-base font-bold text-gray-900">منصة التاجر والإشراف</h2>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                أضف المنتجات، عدّل الأسعار والمخزون، وراجع التقارير، وتصفح سجل محادثات العملاء وتصفيتها.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between text-xs font-bold text-black font-semibold">
-              <span>إدارة المخزن والمبيعات</span>
-              <span className="font-mono text-[10px] bg-gray-900 text-white px-2 py-0.5 rounded font-medium" dir="ltr">/admin</span>
-            </div>
-          </motion.div>
-          
-        </div>
-
-        {/* Dynamic QR Code Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="p-6 border border-gray-150 rounded-xl bg-neutral-50/50 flex flex-col md:flex-row items-center gap-6 text-right shadow-sm"
-        >
-          <div className="bg-white p-3 border border-gray-200 rounded-lg shrink-0 shadow-inner relative">
-            <img 
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/chat')}&color=${(settings?.botPrimaryColor || '#800020').replace('#', '')}&bgcolor=ffffff&qzone=1`}
-              alt="Store Chatbot Barcode"
-              className="w-28 h-28 object-contain"
+    <div className="relative min-h-screen">
+      {/* Premium Loader Overlay */}
+      {loadingPage && (
+        <div className="fixed inset-0 bg-white/95 backdrop-blur-xs z-[9999] flex flex-col items-center justify-center transition-all duration-350" dir="rtl">
+          <div className="relative flex items-center justify-center">
+            {/* Smooth dynamic dual border spinner tuned to store theme colors */}
+            <div 
+              className="w-14 h-14 rounded-full border-4 border-gray-100 animate-spin"
+              style={{ borderTopColor: settings?.botPrimaryColor || '#800020' }}
             />
-            {/* Mini core design color dot in center */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-4 h-4 bg-white border p-0.5 rounded shadow-xs" style={{ borderColor: settings?.botPrimaryColor || '#800020' }}>
-                <div className="w-full h-full rounded-xs" style={{ backgroundColor: settings?.botPrimaryColor || '#800020' }} />
-              </div>
+            <div className="absolute">
+              <Sparkles className="w-5 h-5 animate-pulse" style={{ color: settings?.botPrimaryColor || '#800020' }} />
             </div>
           </div>
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center gap-1.5 justify-center md:justify-start text-xs font-bold text-indigo-600">
-              <QrCode className="w-4 h-4" />
-              <span>الرمز السريع للشات (QR Code)</span>
-            </div>
-            <h3 className="text-sm font-bold text-gray-900 font-sans">امسح الباركود لتجربة الشات بوت فوراً على الهاتف</h3>
-            <p className="text-xs text-gray-500 leading-relaxed font-sans">
-              عند تصوير هذا الباركود بآلة تصوير الجوال، ستفتح لك نافذة المحادثة الذكية لـ <strong style={{ color: settings?.botPrimaryColor || '#800020' }}>{settings?.storeName ?? 'شركة مامو للأجهزة المنزلية والكهربائية'}</strong> مباشرة المخصصة للتصفح والاستفسار عن الأسعار دون الدخول إلى لوحة التحكم.
-            </p>
-            <div className="pt-1.5 flex justify-end md:justify-start">
-              <button
-                onClick={() => navigateTo('/chat')}
-                className="text-[11px] font-bold text-white px-3.5 py-2 rounded transition-all hover:opacity-90 flex items-center gap-1.5 inline-flex cursor-pointer font-sans"
-                style={{ backgroundColor: settings?.botPrimaryColor || '#800020' }}
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>فتح صفحة الشات بوت المباشر</span>
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Small hint footer */}
-        <div className="text-[11px] text-gray-400 font-medium">
-          تم تصميمه بالكامل بأسلوب البساطة النظيفة ودعم فوري لقواعد بيانات Firebase.
+          <p className="mt-4 text-xs font-bold text-gray-600 tracking-wide animate-pulse font-sans">
+            يرجى الانتظار، جاري تحميل الصفحة...
+          </p>
         </div>
-      </div>
+      )}
+
+      {/* Pages Switcher Layout */}
+      {currentPath === '/admin' ? (
+        <div className="relative">
+          <AdminPage />
+          {/* Floating return-to-chat button exclusively for preview testing convenience */}
+          <div className="fixed bottom-4 left-4 z-50">
+            <button
+              onClick={() => navigateTo('/chat')}
+              className="px-3 py-1.5 bg-black text-white rounded text-xs font-bold shadow hover:bg-neutral-900 transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>عرض شات العميل</span>
+            </button>
+          </div>
+        </div>
+      ) : currentPath === '/chat' ? (
+        <ChatPage />
+      ) : (
+        /* Default: Elegantly styled Arabic portal landing page */
+        <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12 font-sans selection:bg-neutral-100" dir="rtl">
+          <div className="max-w-xl w-full text-center space-y-8">
+            
+            {/* Brand visual header */}
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
+              <div className="inline-flex w-10 h-10 bg-black rounded items-center justify-center mx-auto shadow-sm">
+                <div className="w-5 h-5 border-2 border-white"></div>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">بوابة إدارة والرد الذكي للشركة</h1>
+              <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+                تطبيق متكامل وبسيط مدعوم بالذكاء الاصطناعي لمتابعة وتحديث مخزون الأواني والأجهزة الكهربائية في الوقت الفعلي.
+              </p>
+            </motion.div>
+
+            {/* Path Selection Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              
+              {/* Card 1: Chat Client */}
+              <motion.div 
+                whileHover={{ y: -2 }}
+                className="bg-white border border-gray-100 p-6 rounded text-right flex flex-col justify-between hover:border-gray-300 hover:shadow-xs transition-all cursor-pointer"
+                onClick={() => navigateTo('/chat')}
+              >
+                <div className="space-y-2">
+                  <div className="w-8 h-8 bg-zinc-100 text-black rounded flex items-center justify-center">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-base font-bold text-gray-900">مساعد خدمة العملاء</h2>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    افتح صفحة الشات للتواصل الفوري وطرح الأسئلة الذكية حول الأجهزة وأسعارها وتوفرها بالشركة.
+                  </p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between text-xs font-bold text-black">
+                  <span>بدء المحادثة</span>
+                  <span className="font-mono text-[10px] bg-gray-50 px-2 py-0.5 rounded text-gray-500 font-medium" dir="ltr">/chat</span>
+                </div>
+              </motion.div>
+
+              {/* Card 2: Admin Dashboard */}
+              <motion.div 
+                whileHover={{ y: -2 }}
+                className="bg-white border border-gray-100 p-6 rounded text-right flex flex-col justify-between hover:border-gray-300 hover:shadow-xs transition-all cursor-pointer"
+                onClick={() => navigateTo('/admin')}
+              >
+                <div className="space-y-2">
+                  <div className="w-8 h-8 bg-black text-white rounded flex items-center justify-center">
+                    <ShieldAlert className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-base font-bold text-gray-900">منصة التاجر والإشراف</h2>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    أضف المنتجات، عدّل الأسعار والمخزون، وراجع التقارير، وتصفح سجل محادثات العملاء وتصفيتها.
+                  </p>
+                </div>
+                <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between text-xs font-bold text-black font-semibold">
+                  <span>إدارة المخزن والمبيعات</span>
+                  <span className="font-mono text-[10px] bg-gray-900 text-white px-2 py-0.5 rounded font-medium" dir="ltr">/admin</span>
+                </div>
+              </motion.div>
+              
+            </div>
+
+            {/* Dynamic QR Code Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="p-6 border border-gray-150 rounded-xl bg-neutral-50/50 flex flex-col md:flex-row items-center gap-6 text-right shadow-sm"
+            >
+              <div className="bg-white p-3 border border-gray-200 rounded-lg shrink-0 shadow-inner relative">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/chat')}&color=${(settings?.botPrimaryColor || '#800020').replace('#', '')}&bgcolor=ffffff&qzone=1`}
+                  alt="Store Chatbot Barcode"
+                  className="w-28 h-28 object-contain"
+                />
+                {/* Mini core design color dot in center */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-4 h-4 bg-white border p-0.5 rounded shadow-xs" style={{ borderColor: settings?.botPrimaryColor || '#800020' }}>
+                    <div className="w-full h-full rounded-xs" style={{ backgroundColor: settings?.botPrimaryColor || '#800020' }} />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2 flex-1">
+                <div className="flex items-center gap-1.5 justify-center md:justify-start text-xs font-bold text-indigo-600">
+                  <QrCode className="w-4 h-4" />
+                  <span>الرمز السريع للشات (QR Code)</span>
+                </div>
+                <h3 className="text-sm font-bold text-gray-900 font-sans">امسح الباركود لتجربة الشات بوت فوراً على الهاتف</h3>
+                <p className="text-xs text-gray-500 leading-relaxed font-sans">
+                  عند تصوير هذا الباركود بآلة تصوير الجوال، ستفتح لك نافذة المحادثة الذكية لـ <strong style={{ color: settings?.botPrimaryColor || '#800020' }}>{settings?.storeName ?? 'شركة مامو للأجهزة المنزلية والكهربائية'}</strong> مباشرة المخصصة للتصفح والاستفسار عن الأسعار دون الدخول إلى لوحة التحكم.
+                </p>
+                <div className="pt-1.5 flex justify-end md:justify-start">
+                  <button
+                    onClick={() => navigateTo('/chat')}
+                    className="text-[11px] font-bold text-white px-3.5 py-2 rounded transition-all hover:opacity-90 flex items-center gap-1.5 inline-flex cursor-pointer font-sans"
+                    style={{ backgroundColor: settings?.botPrimaryColor || '#800020' }}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>فتح صفحة الشات بوت المباشر</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Small hint footer */}
+            <div className="text-[11px] text-gray-400 font-medium">
+              تم تصميمه بالكامل بأسلوب البساطة النظيفة ودعم فوري لقواعد بيانات Firebase.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

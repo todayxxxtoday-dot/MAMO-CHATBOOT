@@ -121,12 +121,6 @@ app.post('/api/chat', async (req, res) => {
       }
     }
 
-    // Prepare Products Context String in Arabic
-    let productsContext = productsList.map((p, idx) => {
-      const statusStr = p.isAvailable && p.quantity > 0 ? `متوفر (الكمية: ${p.quantity})` : 'غير متوفر حالياً';
-      return `${idx + 1}. المنتج: ${p.name} | القسم: ${p.category} | الماركة: ${p.brand} | السعر: ${p.price} | الحالة: ${statusStr}\nالوصف: ${p.description}`;
-    }).join('\n\n');
-
     // Fetch custom store settings if existing
     let storeSettings: any = null;
     if (db) {
@@ -141,6 +135,15 @@ app.post('/api/chat', async (req, res) => {
       }
     }
 
+    const storeCurrencyLabel = storeSettings?.currency || 'ليرة سورية';
+    const currencySuffix = storeCurrencyLabel === 'دولار' ? 'دولار ($)' : storeCurrencyLabel === 'ليرة سورية' ? 'ليرة سورية (ل.س)' : 'ر.س';
+
+    // Prepare Products Context String in Arabic
+    let productsContext = productsList.map((p, idx) => {
+      const statusStr = p.isAvailable && p.quantity > 0 ? `متوفر (الكمية: ${p.quantity})` : 'غير متوفر حالياً';
+      return `${idx + 1}. المنتج: ${p.name} | القسم: ${p.category} | الماركة: ${p.brand} | السعر: ${p.price} ${currencySuffix} | الحالة: ${statusStr}\nالوصف: ${p.description}`;
+    }).join('\n\n');
+
     // Build standard System Instruction dynamically using Store Settings
     const storeName = storeSettings?.storeName || 'متجر الأجهزة المنزلية والكهربائية';
     const storeLocation = storeSettings?.location || 'الرياض، المملكة العربية السعودية';
@@ -151,6 +154,10 @@ app.post('/api/chat', async (req, res) => {
 
     const systemInstruction = `أنت مساعد ذكي وممثل خدمة العملاء لمتجر "${storeName}".
 مهمتك المطلقة والوحيدة هي الإجابة عن استفسارات العملاء حول المنتجات المتوفرة والأسعار والماركات والأقسام بناءً على قائمة المنتجات الحية المسجلة بالأسفل بمستودعنا.
+
+⚠️ تنبيه هام ومطلق حول اللهجة المستخدمة: يجب عليك الرد والتحدث دائماً باللهجة السورية الأصيلة واللبقة والودية جداً (مثل استخدام عبارات سورية دافئة كـ: "تكرم عيونك يا غالي"، "على راسي حارة"، "أهلاً وسهلاً فيك بمجموعة مامو"، "شو بدك يا عيوني؟")، ويُمنع منعاً باتاً استخدام اللهجة المصرية أو أي لهجة أخرى غير السورية.
+
+⚠️ تنبيه هام حول العملة المعتمدة بالكامل في المتجر: العملة الرسمية للمتجر هي "${storeCurrencyLabel}" (يرجى عرض الأسعار للعملاء دائماً باستخدام عملة ${storeCurrencyLabel}، وتجنب خلط العملات).
 
 بيانات التواصل وعنوان المتجر:
 - الموقع/الفرع الرئيسي: ${storeLocation}
@@ -164,19 +171,68 @@ ${productsContext}
 التعليمات والقوانين الخاصة بك للتفاعل والرد على العميل:
 ${customInstructions}
 
+📖 قاعدة المعرفة وطرق التدريب للردود (Knowledge Base Training Examples):
+1. التدريب على الترحيب الحار واللطيف:
+- السؤال: "مرحبا" أو "السلام عليكم" أو "شلونكم"
+- الرد المالي/التدريبي: "يا مية أهلاً وسهلاً فيك يا غالي بنور عيوننا! أنا سارة ممثلة خدمة العملاء بـشركة مامو للأجهزة المنزلية والكهربائية، كيف بقدر ساعدك اليوم بتصفح الأجهزة والأسعار الحالية بمخزننا؟ تكرم عيونك!"
+
+2. التدريب على الاستفسار عن الأسعار الحية:
+- السؤال: "بكم هاد المكيف؟" أو "شو سعر الغسالة؟"
+- الرد المالي/التدريبي: "على عيني وراسي والله! بالنسبة لـ [اسم المنتج] المتوفر بمستودعاتنا، سعره هو [سعر بالعملة]، وإذا بدك أي تفاصيل عن مواصفات الجهاز أنا من عيوني الثنتين بجاوبك وبشرحلك فوراً!"
+
+3. التدريب على حظر الإجابة خارج نطاق المنتجات:
+- السؤال: "مين فاز بالمباراة؟" أو "اعطيني نصيحة طبية" أو "اكتبلي كود"
+- الرد المالي/التدريبي: "تؤمر عيوني وصح على راسي سؤالك، بس أنا هون مهندسة ومخصصة لمساعدتك بكل شي بيتعلق بمنتجات شركة مامو للأجهزة المنزلية والكهربائية والأسعار المتوفرة وفروع شركتنا. إذا بتحب تسألني عن أي براد أو غسالة أو شاشة أو فرن، أنا بخدمتك بأي وقت!"
+
+4. التدريب على إتمام البيع والتواصل مع الإدارة:
+- السؤال: "بدي اشتريه" أو "كيف اتواصل معكم بالهاتف أو الواتساب؟"
+- الرد المالي/التدريبي: "يا هلا فيك! تواصلك معنا بيسعدنا كتير وبشرفنا! فيك تتواصل مع الإدارة والطلب المباشر أو تتنسق الحجز عن طريق رقم الواتساب المباشر: ${storeWhatsapp} أو تتصل فينا على الهاتف: ${storePhone}. وكمان بتنورنا بالزيارة للفرع الرئيسي بـ: ${storeLocation}!"
+
 ضوابط إرشادية هامة:
 1. لا تقدم أي وعود أو تدرج معلومات بخصوص شروط تفعيل الضمانات أو مميزات إضافية أو مجانية الشحن والتوصيل وطرق السداد الإضافية (مثل كاشير أو تابي أو ميزة تقسيط محددة) إلا إذا كانت واردة ومسجلة في توجيهات الشات بوت المخصصة الموضحة أعلاه.
-2. التزم بالرد بنبرة مهذبة وموثوقة، وباللغة العربية، وكن واضحاً ومختصراً قدر الإمكان.
-3. إذا سأل العميل عن أمور تقع خارج إطار المنتجات المتوفرة لدى المتجر أو قنوات التواصل، فاعتذر بلطف واحترافية وبشكل مقتضب.`;
+2. التزم بالرد بنبرة مهذبة وموثوقة، وباللهجة السورية اللطيفة والأصيلة والسهلة، وكن واضحاً ومختصراً قدر الإمكان.
+3. إذا سأل العميل عن أمور تقع خارج إطار المنتجات المتوفرة لدى المتجر أو قنوات التواصل، فاعتذر بلطف واحترافية وبشكل مقتضب وبذات اللهجة السورية.`;
 
-    // Map conversation history to Gemini schema (user / model)
-    const formattedContents = messages.map((m: any) => {
+    // Map and sanitize conversation history to Gemini schema (user / model)
+    // To ensure Gemini multi-turn runs without errors:
+    // 1. Must alternate 'user' -> 'model'
+    // 2. Must start with 'user'
+    // 3. Consecutive messages of the same role are combined to avoid 400 bad request errors
+    const sortedHistory = messages || [];
+    const formattedContents: any[] = [];
+
+    sortedHistory.forEach((m: any) => {
+      if (!m || !m.text) return;
       const role = m.sender === 'user' ? 'user' : 'model';
-      return {
-        role,
-        parts: [{ text: m.text }]
-      };
+
+      if (formattedContents.length === 0) {
+        if (role === 'user') {
+          formattedContents.push({
+            role: 'user',
+            parts: [{ text: m.text }]
+          });
+        }
+      } else {
+        const lastMsg = formattedContents[formattedContents.length - 1];
+        if (lastMsg.role === role) {
+          // Merge sequential messages of the same author
+          lastMsg.parts[0].text += '\n' + m.text;
+        } else {
+          formattedContents.push({
+            role,
+            parts: [{ text: m.text }]
+          });
+        }
+      }
     });
+
+    // Fallback if empty context to ensure API call is valid
+    if (formattedContents.length === 0) {
+      formattedContents.push({
+        role: 'user',
+        parts: [{ text: 'مرحباً، كيف حالكم؟' }]
+      });
+    }
 
     if (!geminiApiKey) {
       // Graceful local chatbot simulation if Gemini API Key is missing

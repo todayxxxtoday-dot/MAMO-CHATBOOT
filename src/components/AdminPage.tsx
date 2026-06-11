@@ -44,6 +44,7 @@ export default function AdminPage() {
 
   // Firestore states: Settings
   const [storeNameValue, setStoreNameValue] = useState('');
+  const [currencyValue, setCurrencyValue] = useState<'ليرة سورية' | 'دولار' | 'ر.س'>('ليرة سورية');
   const [logoUrlValue, setLogoUrlValue] = useState('');
   const [locationValue, setLocationValue] = useState('');
   const [whatsappValue, setWhatsappValue] = useState('');
@@ -157,6 +158,7 @@ export default function AdminPage() {
       if (snapshot.exists()) {
         const data = snapshot.data();
         setStoreNameValue(data.storeName || '');
+        setCurrencyValue(data.currency || 'ليرة سورية');
         setLogoUrlValue(data.logoUrl || '');
         setLocationValue(data.location || '');
         setWhatsappValue(data.whatsapp || '');
@@ -172,6 +174,7 @@ export default function AdminPage() {
       } else {
         // Instantiate defaults if settings doesn't exist
         setStoreNameValue('شركة مامو للأجهزة المنزلية والكهربائية');
+        setCurrencyValue('ليرة سورية');
         setLogoUrlValue('');
         setLocationValue('الرياض، المملكة العربية السعودية');
         setWhatsappValue('966500000000');
@@ -213,6 +216,7 @@ export default function AdminPage() {
         botEmployeeName: botEmployeeNameValue.trim(),
         botResponseSpeed: botResponseSpeedValue.trim(),
         botAvatar: botAvatarValue.trim(),
+        currency: currencyValue,
         updatedAt: new Date().toISOString()
       });
       alert('تم حفظ إعدادات المتجر والشات بوت بنجاح!');
@@ -666,7 +670,9 @@ export default function AdminPage() {
                     <div>
                       <label className={`text-xs font-medium block mb-1 ${
                         darkMode ? 'text-zinc-300' : 'text-gray-600'
-                      }`}>السعر</label>
+                      }`}>
+                        السعر ({currencyValue === 'دولار' ? 'دولار ($)' : currencyValue === 'ليرة سورية' ? 'ليرة سورية (ل.س)' : 'ر.س'})
+                      </label>
                       <input
                         type="number"
                         value={prodPrice || ''}
@@ -835,7 +841,7 @@ export default function AdminPage() {
                       }`}>
                         <div>
                           <span className="text-[10px] text-gray-400 block font-semibold leading-none">السعر</span>
-                          <span className="text-sm font-bold block mt-1">{p.price.toLocaleString('ar-EG')} ر.س</span>
+                          <span className="text-sm font-bold block mt-1">{p.price.toLocaleString('ar-EG')} {currencyValue === 'دولار' ? '$' : currencyValue === 'ليرة سورية' ? 'ل.س' : 'ر.س'}</span>
                         </div>
 
                         <div>
@@ -1157,7 +1163,7 @@ export default function AdminPage() {
                       <span>🛒 هوية المتجر والبيانات الأساسية</span>
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>اسم المتجر الحالي</label>
                         <input
@@ -1187,6 +1193,23 @@ export default function AdminPage() {
                               : 'bg-white border-gray-200 text-gray-950 focus:border-black'
                           }`}
                         />
+                      </div>
+
+                      <div>
+                        <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>العملة المعتمدة للمتجر</label>
+                        <select
+                          value={currencyValue}
+                          onChange={(e) => setCurrencyValue(e.target.value as any)}
+                          className={`w-full px-3 py-2 border rounded text-xs focus:outline-none transition-all cursor-pointer ${
+                            darkMode 
+                              ? 'bg-zinc-950 border-zinc-800 text-zinc-150 focus:border-zinc-700' 
+                              : 'bg-white border-gray-200 text-gray-950 focus:border-black'
+                          }`}
+                        >
+                          <option value="ليرة سورية" className={darkMode ? 'bg-zinc-900 text-zinc-100' : ''}>ليرة سورية (ل.س)</option>
+                          <option value="دولار" className={darkMode ? 'bg-zinc-900 text-zinc-100' : ''}>دولار أمريكي ($)</option>
+                          <option value="ر.س" className={darkMode ? 'bg-zinc-900 text-zinc-100' : ''}>ريال سعودي (ر.س)</option>
+                        </select>
                       </div>
                     </div>
 
