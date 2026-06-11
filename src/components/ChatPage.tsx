@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, doc, setDoc, arrayUnion, updateDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, setDoc, arrayUnion, updateDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { Message, Conversation } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, Sparkles, AlertCircle, MapPin, Phone, MessageCircle, Mail } from 'lucide-react';
+import { Send, Sparkles, AlertCircle, MapPin, Phone, MessageCircle, Mail, Trash2, Archive } from 'lucide-react';
 
 function TypewriterText({ text }: { text: string }) {
   const [displayedText, setDisplayedText] = useState('');
@@ -88,6 +88,22 @@ export default function ChatPage() {
     return unsubscribe;
   }, []);
 
+  const resetSession = (customGreeting?: string) => {
+    const randomId = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const uniqueConvId = `CH-${Date.now().toString().slice(-6)}-${randomId}`;
+    const custNum = Math.floor(Math.random() * 899 + 100);
+    
+    setConversationId(uniqueConvId);
+    setCustomerId(`عميل #${custNum}`);
+    
+    // Clear messages and set default greeting
+    setMessages([{
+      sender: 'bot',
+      text: customGreeting || settings?.botWelcomeMessage || DEFAULT_GREETING,
+      timestamp: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+    }]);
+  };
+
   // Initialize unique IDs for this visitor session
   useEffect(() => {
     const randomId = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -97,6 +113,47 @@ export default function ChatPage() {
     setConversationId(uniqueConvId);
     setCustomerId(`عميل #${custNum}`);
   }, []);
+
+  // Archive current chat and start fresh
+  const handleArchiveChat = async () => {
+    if (!conversationId) return;
+    if (!window.confirm('هل تريد أرشفة هذه المحادثة وبدء محادثة جديدة؟')) return;
+
+    try {
+      const convRef = doc(db, 'conversations', conversationId);
+      await updateDoc(convRef, { 
+        status: 'archived',
+        updatedAt: new Date().toISOString()
+      });
+
+      // Generate a new clean session
+      resetSession();
+      alert('تمت أرشفة المحادثة بنجاح وبدء محادثة جديدة بقاعدة البيانات!');
+    } catch (err) {
+      console.error('Error archiving conversation:', err);
+      // fallback reset session anyway
+      resetSession();
+    }
+  };
+
+  // Delete current chat completely from Firestore and start fresh
+  const handleDeleteChat = async () => {
+    if (!conversationId) return;
+    if (!window.confirm('هل تريد حذف ومسح هذه المحادثة بالكامل من قاعدة البيانات وبدء محادثة جديدة؟')) return;
+
+    try {
+      const convRef = doc(db, 'conversations', conversationId);
+      await deleteDoc(convRef);
+      
+      // Generate a new clean session
+      resetSession();
+      alert('تم حذف هذه المحادثة بالكامل وبدء محادثة جديدة!');
+    } catch (err) {
+      console.error('Error deleting conversation:', err);
+      // fallback reset session anyway
+      resetSession();
+    }
+  };
 
   // Soft auto-scroll to latest messaging context
   useEffect(() => {
@@ -298,6 +355,24 @@ export default function ChatPage() {
           <div className="h-4 w-px bg-gray-200 hidden sm:block" />
 
           <div className="flex items-center gap-2">
+            {/* Archive Chat button */}
+            <button
+              onClick={handleArchiveChat}
+              title="أرشفة المحادثة الحالية"
+              className="w-8 h-8 rounded-full flex items-center justify-center bg-amber-50 text-amber-600 hover:bg-amber-100 active:scale-95 transition-all border border-amber-200/60 cursor-pointer shadow-2xs"
+            >
+              <Archive className="w-4 h-4 shrink-0" />
+            </button>
+
+            {/* Delete Chat button */}
+            <button
+              onClick={handleDeleteChat}
+              title="حذف المحادثة وبدء جلسة جديدة"
+              className="w-8 h-8 rounded-full flex items-center justify-center bg-red-50 text-red-600 hover:bg-red-100 active:scale-95 transition-all border border-red-200/60 cursor-pointer shadow-2xs"
+            >
+              <Trash2 className="w-4 h-4 shrink-0" />
+            </button>
+
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-green-50 text-green-700 border border-green-250">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
               <span>نشط الآن</span>

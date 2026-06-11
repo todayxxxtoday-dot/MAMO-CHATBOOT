@@ -55,8 +55,8 @@
         },
         "status": {
           "type": "string",
-          "description": "Status of the conversation: active, resolved, or pending",
-          "enum": ["active", "resolved", "pending"]
+          "description": "Status of the conversation: active, resolved, pending, or archived",
+          "enum": ["active", "resolved", "pending", "archived"]
         },
         "messages": {
           "type": "array",

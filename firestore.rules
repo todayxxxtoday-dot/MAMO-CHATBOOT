@@ -30,6 +30,8 @@ service cloud.firestore {
       allow list: if isSignedIn();
       // Allow any visitor to create a chat or log messages
       allow create, update: if isValidId(conversationId);
+      // Allow customers and admin to delete their own conversation
+      allow delete: if isValidId(conversationId);
     }
 
     // 4. Settings Collection Rules

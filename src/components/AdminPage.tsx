@@ -92,7 +92,7 @@ export default function AdminPage() {
   
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'resolved' | 'active'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'resolved' | 'active' | 'archived'>('all');
   const [dateSort, setDateSort] = useState<'newest' | 'oldest'>('newest');
 
   // Listen to Auth State
@@ -335,17 +335,16 @@ export default function AdminPage() {
   };
 
   // Chat Administration
-  const updateChatLoggingStatus = async (convId: string, currentStatus: string) => {
-    const nextStatus = currentStatus === 'pending' ? 'active' : currentStatus === 'active' ? 'resolved' : 'pending';
+  const setChatStatus = async (convId: string, newStatus: 'pending' | 'active' | 'resolved' | 'archived') => {
     try {
       const docRef = doc(db, 'conversations', convId);
       await updateDoc(docRef, { 
-        status: nextStatus,
+        status: newStatus,
         updatedAt: new Date().toISOString()
       });
       // Update selected inspector conversation automatically matching change
       if (selectedConversation && selectedConversation.id === convId) {
-        setSelectedConversation(prev => prev ? { ...prev, status: nextStatus as any } : null);
+        setSelectedConversation(prev => prev ? { ...prev, status: newStatus } : null);
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `conversations/${convId}`);
@@ -912,7 +911,7 @@ export default function AdminPage() {
                   {/* Status buttons */}
                   <div className="flex items-center gap-1">
                     <span className={`text-[11px] font-bold ml-1.5 ${darkMode ? 'text-zinc-500' : 'text-gray-400'}`}>تصفية:</span>
-                    {(['all', 'pending', 'active', 'resolved'] as const).map((st) => (
+                    {(['all', 'pending', 'active', 'resolved', 'archived'] as const).map((st) => (
                       <button
                         key={st}
                         onClick={() => setStatusFilter(st)}
@@ -922,7 +921,7 @@ export default function AdminPage() {
                             : (darkMode ? 'bg-zinc-950 border-zinc-800 text-zinc-405 hover:bg-zinc-850' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50/50')
                         }`}
                       >
-                        {st === 'all' ? 'الكل' : st === 'pending' ? 'انتظار' : st === 'active' ? 'نشطة' : 'منتهية'}
+                        {st === 'all' ? 'الكل' : st === 'pending' ? 'انتظار' : st === 'active' ? 'نشطة' : st === 'resolved' ? 'منتهية' : 'مؤرشفة'}
                       </button>
                     ))}
                   </div>
@@ -981,9 +980,11 @@ export default function AdminPage() {
                               ? (darkMode ? 'bg-zinc-800 text-zinc-400 border border-zinc-700' : 'bg-neutral-100 text-neutral-800 border border-neutral-200')
                               : log.status === 'active'
                               ? 'bg-emerald-950/40 text-emerald-350 border border-emerald-900/50'
+                              : log.status === 'archived'
+                              ? 'bg-amber-950/40 text-amber-300 border border-amber-900/50'
                               : 'bg-zinc-800 text-zinc-300 border border-zinc-700'
                           }`}>
-                            {log.status === 'resolved' ? 'مجابة' : log.status === 'active' ? 'جارية' : 'تنتظر'}
+                            {log.status === 'resolved' ? 'مجابة' : log.status === 'active' ? 'جارية' : log.status === 'archived' ? 'مؤرشفة' : 'تنتظر'}
                           </span>
                         </div>
 
@@ -1019,31 +1020,61 @@ export default function AdminPage() {
                       <p className="text-[10px] text-gray-400 font-bold mt-0.5">المعرف الفني: <span className="font-mono">{selectedConversation.id}</span></p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {/* State cycler */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {/* Active status button */}
                       <button
-                        onClick={() => updateChatLoggingStatus(selectedConversation.id!, selectedConversation.status)}
-                        className={`px-3 py-1.5 border rounded text-[10.5px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                          darkMode 
-                            ? 'bg-zinc-800 border-zinc-700 hover:bg-zinc-750 text-zinc-100' 
-                            : 'bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 text-black'
+                        onClick={() => setChatStatus(selectedConversation.id!, 'active')}
+                        className={`px-2.5 py-1.5 border rounded-md text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                          selectedConversation.status === 'active'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : (darkMode ? 'bg-zinc-950 border-zinc-805 text-zinc-400 hover:bg-zinc-850' : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50')
                         }`}
-                        title="تحديث حالة المتابعة"
+                        title="تحديد كنشطة جارية"
                       >
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        <span>تحويل الحالة: {selectedConversation.status === 'resolved' ? 'تنشيط' : selectedConversation.status === 'active' ? 'حلّ' : 'تنشيط'}</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>نشطة</span>
                       </button>
+
+                      {/* Resolved status button */}
+                      <button
+                        onClick={() => setChatStatus(selectedConversation.id!, 'resolved')}
+                        className={`px-2.5 py-1.5 border rounded-md text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                          selectedConversation.status === 'resolved'
+                            ? 'bg-neutral-100 border-neutral-300 text-neutral-800'
+                            : (darkMode ? 'bg-zinc-950 border-zinc-805 text-zinc-400 hover:bg-zinc-850' : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50')
+                        }`}
+                        title="تحديد كمنتهية مجابة"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5 text-neutral-500" />
+                        <span>منتهية</span>
+                      </button>
+
+                      {/* Archived status button */}
+                      <button
+                        onClick={() => setChatStatus(selectedConversation.id!, 'archived')}
+                        className={`px-2.5 py-1.5 border rounded-md text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                          selectedConversation.status === 'archived'
+                            ? 'bg-amber-50 border-amber-200 text-amber-700 font-bold'
+                            : (darkMode ? 'bg-zinc-950 border-zinc-805 text-zinc-400 hover:bg-zinc-850' : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50')
+                        }`}
+                        title="أرشفة هذه المحادثة"
+                      >
+                        <Archive className="w-3.5 h-3.5 text-amber-500" />
+                        <span>أرشفة</span>
+                      </button>
+
+                      <div className="h-4 w-px bg-gray-200 dark:bg-zinc-800 mx-1" />
 
                       <button
                         onClick={() => deleteChatLog(selectedConversation.id)}
-                        className={`p-1.5 rounded transition-all cursor-pointer font-bold text-xs ${
+                        className={`p-1.5 rounded transition-all cursor-pointer font-bold text-xs border ${
                           darkMode 
-                            ? 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-red-400' 
-                            : 'hover:bg-red-50 text-gray-400 hover:text-red-500'
+                            ? 'bg-red-950/20 border-red-900/50 text-red-400 hover:bg-red-900/40 hover:text-red-300' 
+                            : 'bg-red-50 border-red-100/50 text-red-600 hover:bg-red-100 hover:border-red-250'
                         }`}
-                        title="مسح السجل"
+                        title="مسح السجل نهائياً"
                       >
-                        مسح
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

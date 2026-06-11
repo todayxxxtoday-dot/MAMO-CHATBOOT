@@ -20,7 +20,7 @@ export interface Message {
 export interface Conversation {
   id?: string;
   customerName: string;
-  status: 'active' | 'resolved' | 'pending';
+  status: 'active' | 'resolved' | 'pending' | 'archived';
   messages: Message[];
   createdAt: string;
   updatedAt: string;
