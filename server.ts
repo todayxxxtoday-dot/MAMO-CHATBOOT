@@ -9,20 +9,25 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Ensure GEMINI_API_KEY is available (lazy loaded or warning is printed)
-const geminiApiKey = process.env.GEMINI_API_KEY || '';
-if (!geminiApiKey) {
-  console.warn('WARNING: GEMINI_API_KEY environment variable is not set. Chatbot will use fallback responses.');
-}
-
-const ai = new GoogleGenAI({
-  apiKey: geminiApiKey,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
+// Safe lazy-loader for GoogleGenAI to ensure environment variables are correctly read at runtime
+let aiInstance: any = null;
+function getGeminiClient() {
+  const apiKey = process.env.GEMINI_API_KEY || '';
+  if (!apiKey) {
+    return null;
   }
-});
+  if (!aiInstance) {
+    aiInstance = new GoogleGenAI({
+      apiKey: apiKey,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+  }
+  return aiInstance;
+}
 
 // Initialize Firebase App for Server-Side Context
 let db: any = null;
@@ -84,6 +89,90 @@ const FALLBACK_PRODUCTS = [
     isAvailable: true
   }
 ];
+
+// Helper function to match and generate highly intelligent contextual replies in Arabic
+function getSmartFallbackReply(userMessage: string, productsList: any[], storeSettings: any, currencySuffix: string): string {
+  if (!userMessage) return 'مرحباً بك! كيف يمكنني مساعدتك اليوم؟';
+  const storeName = storeSettings?.storeName || 'الأجهزة المنزلية والكهربائية';
+  const businessType = storeSettings?.businessType || 'شركة';
+  const location = storeSettings?.location || 'الرياض، المملكة العربية السعودية';
+  const whatsapp = storeSettings?.whatsapp || 'غير متاح حالياً';
+  const phone = storeSettings?.contactNumber || 'غير متاح حالياً';
+  
+  const msgLower = userMessage.toLowerCase().trim();
+
+  // 1. GREETINGS
+  if (/^(مرحبا|مرحباً|السلام|سلام|أهلاً|اهلا|صباح|مساء|كيف الحال|مرحبتين|مرحبا بك|أهلين|اهلين)/.test(msgLower)) {
+    return `أهلاً ومرحباً بكم في ${businessType} "${storeName}" للأجهزة المنزلية والكهربائية. يسعدنا جداً الرد على استفساراتكم ومساعدتكم في تصفح عروضنا الرائعة والأجهزة المتاحة بالمستودعات بأسعارها الحالية. كيف يمكننا خدمتكم اليوم؟`;
+  }
+
+  // 2. CONTACT AND ADDRESS / SHIPPING
+  if (/(مكان|موقع|عنوان|وين|وينكم|بلد|مدينة|فرع|فروع|تواصل|رقم|هاتف|تلفون|موبايل|واتس|واتساب|إيميل|ايميل|شراء|حجز|طلب|طريقة الشراء|كيف اشتري)/.test(msgLower)) {
+    let response = `يسعدنا ويشرفنا تواصلكم وخدمتكم في ${businessType} "${storeName}". إليكم تفاصيل العنوان والاتصال المباشر لخدمتكم وإتمام طلباتكم وحجز الأجهزة:\n\n`;
+    if (location) response += `📍 **الموقع الرئيسي:** ${location}\n`;
+    if (whatsapp) response += `💬 **المبيعات الفورية (واتساب):** ${whatsapp}\n`;
+    if (phone) response += `📞 **رقم الاتصال المباشر:** ${phone}\n`;
+    response += `\nتفضل بالمراسلة معنا في أي وقت لتأكيد حجز أي جهاز وتنسيق الشحن والتوصيل السريع!`;
+    return response;
+  }
+
+  // 3. PRODUCT-SPECIFIC SEARCH
+  const matchedProducts: any[] = [];
+  productsList.forEach(p => {
+    const pName = (p.name || '').toLowerCase();
+    const pCat = (p.category || '').toLowerCase();
+    const pBrand = (p.brand || '').toLowerCase();
+    const pDesc = (p.description || '').toLowerCase();
+
+    // Split query and search for keywords
+    const keywords = msgLower.split(/[\s,]+/);
+    const hasMatch = keywords.some(kw => {
+      if (kw.length <= 2) return false;
+      return pName.includes(kw) || pCat.includes(kw) || pBrand.includes(kw) || pDesc.includes(kw);
+    });
+
+    if (hasMatch || msgLower.includes(pCat) || msgLower.includes(pBrand)) {
+      matchedProducts.push(p);
+    }
+  });
+
+  if (matchedProducts.length > 0) {
+    let response = `أهلاً بكم! إليكم تفاصيل الأجهزة المتوفرة لدينا حالياً والتي تطابق استفساركم في صالات عرض "${storeName}":\n\n`;
+    matchedProducts.slice(0, 3).forEach((p, idx) => {
+      const avail = p.isAvailable && p.quantity > 0 ? `متوفر (الكمية المتاحة: ${p.quantity})` : 'غير متوفر حالياً';
+      response += `${idx + 1}. **${p.name}**\n   - **الماركة:** ${p.brand}\n   - **السعر الحالي:** ${p.price} ${currencySuffix}\n   - **التوفر:** ${avail}\n   - **المواصفات:** ${p.description || 'جهاز كهربائي أصلي بكفالة وجودة ممتازة'}\n\n`;
+    });
+    response += `لإتمام الشراء وحجز الجهاز، يمكنكم المراسلة عير الواتساب: ${whatsapp} أو بالهاتف: ${phone}. هل ترغب بطلب تفاصيل أخرى؟`;
+    return response;
+  }
+
+  // 4. GENERAL STATUS & PRODUCTS LISTING
+  if (/(أجهزة|اجهزة|منتجات|متوفر|موجود|عرض|عروض|عنكم|شو في|ماذا يوجد|المستودع|قائمة|قسم|تبيعوا)/.test(msgLower)) {
+    let response = `أهلاً بكم في ${businessType} "${storeName}". يسعدنا تزويدكم بنماذج من الأجهزة الكهربائية العالية الجودة المتوفرة في مستودعنا حالياً:\n\n`;
+    productsList.slice(0, 5).forEach((p, idx) => {
+      response += `🔹 **${p.name}** - السعر: ${p.price} ${currencySuffix} (${p.isAvailable ? 'متوفر' : 'غير متوفر'})\n`;
+    });
+    response += `\nلدينا تشكيلة متكاملة ومكفولة من الغسالات، الثلاجات، المكيفات، الشاشات، والأفران بماركات عالمية وأصلية. للطلب الفوري، يرجى تزويدنا باسم الجهاز، أو للتواصل عبر واتساب: ${whatsapp}.`;
+    return response;
+  }
+
+  // 4.5. KNOWLEDGE BASE MATCHING (Fallback check against custom store facts)
+  const kbText = storeSettings?.knowledgeBase || '';
+  if (kbText) {
+    const kbLines = kbText.split('\n');
+    const matchedLines = kbLines.filter((line: string) => {
+      const lineClean = line.toLowerCase().trim();
+      const words = msgLower.split(/[\s,]+/);
+      return words.some(w => w.length > 2 && lineClean.includes(w));
+    });
+    if (matchedLines.length > 0) {
+      return `أهلاً بك! بناءً على معلومات وقاعدة المعرفة المعتمدة لدينا في "${storeName}":\n\n${matchedLines.slice(0, 4).join('\n')}\n\nللحصول على المزيد من التفاصيل أو لتلقي الدعم الفوري، يسعدنا تواصلكم عبر الواتساب على الرقم: ${whatsapp} أو هاتفياً: ${phone}.`;
+    }
+  }
+
+  // 5. DEFAULT POLITE COUNTER-QUESTION
+  return `مرحباً بك! نحن نرحب بك في ${businessType} "${storeName}". أنا مساعدك الذكي المخصص لخدمتك وتزويدك بأسعار ومواصفات أجهزتنا الكهربائية والمنزلية.\n\nلمساعدتك بأفضل شكل، هل تبحث عن جهاز محدد بالاسم أو الماركة (مثل غسالة، ثلاجة، شاشة، مكيف هواء أو ميكروويف)؟\nكما يمكنك دائماً التواصل المباشر مع صالة المبيعات عبر الواتساب للطلب الفوري: ${whatsapp} أو الهاتف: ${phone}.`;
+}
 
 // 1. API: Smart Chat endpoint (using Gemini API)
 app.post('/api/chat', async (req, res) => {
@@ -150,8 +239,8 @@ app.post('/api/chat', async (req, res) => {
     const storeLocation = storeSettings?.location || 'الرياض، المملكة العربية السعودية';
     const storeWhatsapp = storeSettings?.whatsapp || 'غير متاح حالياً';
     const storePhone = storeSettings?.contactNumber || 'غير متاح حالياً';
-    const storeEmail = storeSettings?.email || 'غير متاح حالياً';
-    const customInstructions = storeSettings?.botInstructions || 'جاوب بأدب ومصداقية على الأسئلة الخاصة بأسعار ومواصفات وتوفر الأجهزة المنزلية فقط.';
+    const storeEmail = storeSettings?.email || 'غير متاح حالياً';    const customInstructions = storeSettings?.botInstructions || 'جاوب بأدب ومصداقية على الأسئلة الخاصة بأسعار ومواصفات وتوفر الأجهزة المنزلية فقط.';
+    const knowledgeBase = storeSettings?.knowledgeBase || '';
 
     const systemInstruction = `أنت مساعد ذكي وممثل خدمة العملاء لـ ${businessType} "${storeName}".
 مهمتك المطلقة والوحيدة هي الإجابة عن استفسارات العملاء حول المنتجات المتوفرة والأسعار والماركات والأقسام بناءً على قائمة المنتجات الحية المسجلة بالأسفل بمستودعنا.
@@ -171,6 +260,8 @@ ${productsContext}
 
 التعليمات والقوانين الخاصة بك للتفاعل والرد على العميل:
 ${customInstructions}
+
+${knowledgeBase ? `قاعدة المعرفة والمعلومات الحقيقية الرسمية المعتمدة للمنشأة (Knowledge Base):\n${knowledgeBase}\n\nيجب عليك دمج واستشارة هذه الحقائق عند الإجابة على أي سؤال متعلق بها بدقة بالغة وبنفس تفاصيلها.` : ''}
 
 📖 قاعدة المعرفة وطرق التدريب للردود (Knowledge Base Training Examples):
 1. التدريب على الترحيب المهني واللطيف:
@@ -195,10 +286,6 @@ ${customInstructions}
 3. إذا سأل العميل عن أمور تقع خارج إطار المنتجات المتوفرة لدى ${businessType} أو قنوات التواصل، فاعتذر بلطف واحترافية وبشكل مقتضب باللغة العربية الفصحى المبسطة والمهنية دون اللجوء لأي لهجات أخرى.`;
 
     // Map and sanitize conversation history to Gemini schema (user / model)
-    // To ensure Gemini multi-turn runs without errors:
-    // 1. Must alternate 'user' -> 'model'
-    // 2. Must start with 'user'
-    // 3. Consecutive messages of the same role are combined to avoid 400 bad request errors
     const sortedHistory = messages || [];
     const formattedContents: any[] = [];
 
@@ -216,7 +303,6 @@ ${customInstructions}
       } else {
         const lastMsg = formattedContents[formattedContents.length - 1];
         if (lastMsg.role === role) {
-          // Merge sequential messages of the same author
           lastMsg.parts[0].text += '\n' + m.text;
         } else {
           formattedContents.push({
@@ -227,7 +313,6 @@ ${customInstructions}
       }
     });
 
-    // Fallback if empty context to ensure API call is valid
     if (formattedContents.length === 0) {
       formattedContents.push({
         role: 'user',
@@ -235,40 +320,48 @@ ${customInstructions}
       });
     }
 
-    if (!geminiApiKey) {
-      // Graceful local chatbot simulation if Gemini API Key is missing
-      const lastUserMessage = messages[messages.length - 1]?.text || '';
-      let reply = `أهلاً بك في متجر ${storeName}. عذراً، لم يتم تهيئة مفتاح الذكاء الاصطناعي (Gemini API Key) في هذا الخادم بعد لتقديم الخدمة الذكية الكاملة.`;
-      
-      if (lastUserMessage.includes('سعر') || lastUserMessage.includes('بكم') || lastUserMessage.includes('أسعار')) {
-        reply = `الأسعار في متجر ${storeName} تختلف بحسب الماركات ونوع الأجهزة المتوفرة في المخزن. لخدمتك مباشرة ومتابعة الشراء، يمكنك التواصل على الواتساب: ${storeWhatsapp} أو الهاتف: ${storePhone}.`;
-      } else if (lastUserMessage.includes('موقع') || lastUserMessage.includes('مكان') || lastUserMessage.includes('عنوان')) {
-        reply = `عنوان متجر ${storeName} الرئيسي هو: ${storeLocation}`;
-      } else if (lastUserMessage.includes('تواصل') || lastUserMessage.includes('رقم') || lastUserMessage.includes('هاتف') || lastUserMessage.includes('ايميل')) {
-        reply = `قنوات تواصل متجر ${storeName}:\n- الهاتف: ${storePhone}\n- الواتساب: ${storeWhatsapp}\n- البريد: ${storeEmail}`;
-      } else if (lastUserMessage.includes('متوفر') || lastUserMessage.includes('عندك') || lastUserMessage.includes('متاح')) {
-        reply = `لدينا العديد من الأجهزة المنزلية الممتازة المتاحة في المخزن حاليا (مثل ثلاجات، غسالات، شاشات ومكيفات). يمكنك تصفحها مباشرة في الصفحة الرئيسية، أو تواصل معنا مباشرة عبر واتساب: ${storeWhatsapp}.`;
+    const lastUserQuery = sortedHistory.filter((m: any) => m && m.sender === 'user').pop()?.text || 'مرحباً';
+
+    let replyText = '';
+    const aiClient = getGeminiClient();
+
+    if (aiClient) {
+      try {
+        console.log('Attempting primary Gemini call using model gemini-3.5-flash...');
+        const response = await aiClient.models.generateContent({
+          model: 'gemini-3.5-flash',
+          contents: formattedContents,
+          config: {
+            systemInstruction: systemInstruction + '\n⚠️ تنبيه هام لسرعة فائقة وسياق دقيق: يجب أن تكون الإجابات موضوعية، مباشرة، لبقة، ومقنعة جداً للعميل في حدود سطرين إلى 3 أسطر فقط كحد أقصى، وباللغة العربية الفصحى الفائقة والواضحة.',
+            temperature: 0.3,
+            maxOutputTokens: 250
+          }
+        });
+        replyText = response.text || '';
+      } catch (primaryErr: any) {
+        console.error('Gemini call failed, executing fallback matcher:', primaryErr.message || primaryErr);
+        replyText = getSmartFallbackReply(lastUserQuery, productsList, storeSettings, currencySuffix);
       }
-      return res.json({ text: reply });
+    } else {
+      console.log('Gemini client not initialized, executing fallback matcher directly.');
+      replyText = getSmartFallbackReply(lastUserQuery, productsList, storeSettings, currencySuffix);
     }
 
-    // Call actual Gemini API (Modern SDK)
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: formattedContents,
-      config: {
-        systemInstruction: systemInstruction + '\n⚠️ تنبيه هام لسرعة فائقة: يجب أن تكون الإجابات مختصرة جداً، دقيقة ومباشرة (في حدود سطرين إلى 3 أسطر فقط كحد أقصى) لتوفير سرعة استجابة فائقة للعميل وسرعة الأداء.',
-        temperature: 0.3,
-        maxOutputTokens: 250
-      }
-    });
-
-    const replyText = response.text || 'عذراً، لم أستطع صياغة رد مناسب حالياً. يرجى إعادة إرسال رسالتك.';
     res.json({ text: replyText });
 
   } catch (error: any) {
-    console.error('Gemini API Integration Error:', error);
-    res.status(500).json({ error: 'حدث خطأ أثناء معالجة المحادثة الروتينية الذكية.' });
+    console.error('Critical Router Exception in Chat endpoint, implementing safe local query mapping:', error);
+    try {
+      // Direct graceful safety net in case of extreme failures
+      let queryVal = 'أهلاً ومرحباً';
+      if (req.body && Array.isArray(req.body.messages)) {
+        queryVal = req.body.messages.filter((m: any) => m && m.sender === 'user').pop()?.text || queryVal;
+      }
+      const absoluteFallback = `أعتذر عن الاضطراب المؤقت في الخوادم السحابية الذكية حالياً. ومع ذلك، يسعدنا تلبية طلباتكم فوراً! تفضلوا بالتواصل مع فريق المبيعات مباشرة عبر الواتساب على الرقم المخصص للحجوزات لتأكيد طلبكم وإعطائكم عرض السعر الفوري للأجهزة المطلوبة. تفاصيل التواصل متوفرة في لوحة معلومات المتجر.`;
+      res.json({ text: absoluteFallback });
+    } catch (nestedErr) {
+      res.json({ text: 'أهلاً بك. الخوادم السحابية تحت الصيانة لثوانٍ معدودة. تفضل بالتواصل معنا عبر رقم الواتساب لحجز أجهزتكم والاستفسار مباشرة!' });
+    }
   }
 });
 

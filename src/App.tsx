@@ -107,24 +107,35 @@ export default function App() {
 
             {/* Path Selection Cards - Simplified to beautiful, text-free premium icon buttons */}
             <div className="flex items-center justify-center gap-6 pt-2">
-              {/* Button 1: Chat Client */}
+              {/* Button 1: Customer Service Assistant (مساعد خدمة العملاء) */}
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="w-18 h-18 rounded-2xl bg-zinc-100 text-black hover:bg-zinc-200 transition-all flex items-center justify-center cursor-pointer border border-zinc-200/60 shadow-xs"
                 onClick={() => navigateTo('/chat')}
-                title="مساعد خدمة العملاء الذكي (الشات)"
+                title="مساعد خدمة العملاء الذكي"
               >
                 <MessageSquare className="w-7 h-7" />
               </motion.button>
 
-              {/* Button 2: Admin Dashboard */}
+              {/* Button 2: Merchant Platform (منصة التاجر) */}
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-18 h-18 rounded-2xl bg-black text-white hover:bg-neutral-900 transition-all flex items-center justify-center cursor-pointer shadow-md"
-                onClick={() => navigateTo('/admin')}
-                title="لوحة الإشراف ومنصة التاجر"
+                className="w-18 h-18 rounded-2xl bg-zinc-900 text-white hover:bg-neutral-850 transition-all flex items-center justify-center cursor-pointer border border-zinc-800 shadow-md"
+                onClick={() => navigateTo('/admin?tab=products')}
+                title="منصة التاجر وإدارة الأجهزة والأسعار"
+              >
+                <ShoppingBag className="w-7 h-7" />
+              </motion.button>
+
+              {/* Button 3: Inspector / Supervisor (الإشراف) */}
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-18 h-18 rounded-2xl bg-zinc-100 text-zinc-900 hover:bg-neutral-200 transition-all flex items-center justify-center cursor-pointer border border-zinc-200 shadow-sm"
+                onClick={() => navigateTo('/admin?tab=chats')}
+                title="بوابة الرقابة والإشراف على المحادثات"
               >
                 <ShieldAlert className="w-7 h-7" />
               </motion.button>
@@ -153,17 +164,17 @@ export default function App() {
                     alt="Store Chatbot Barcode"
                     className="w-28 h-28 object-contain"
                   />
-                  {/* Center branding circle tightly aligned as part of the QR code */}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  {/* Center branding badge tightly integrated as a native part of the QR code */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
                     <div 
-                      className="bg-white border-2 rounded-full w-9 h-9 shadow-md flex items-center justify-center select-none" 
+                      className="bg-white border-3 rounded-md w-[42px] h-[42px] flex flex-col items-center justify-center text-center px-0.5" 
                       style={{ borderColor: settings?.botPrimaryColor || '#800020' }}
                     >
                       <span 
-                        className="text-[8px] font-black tracking-tighter truncate leading-none text-center block w-full px-0.5" 
+                        className="text-[7.5px] font-black tracking-tighter uppercase leading-none text-center block max-w-full truncate px-0.5" 
                         style={{ color: settings?.botPrimaryColor || '#800020' }}
                       >
-                        {settings?.storeName ? settings.storeName.substring(0, 5) : 'MAMO'}
+                        {settings?.storeName ? settings.storeName.split(' ')[0] : 'MAMO'}
                       </span>
                     </div>
                   </div>

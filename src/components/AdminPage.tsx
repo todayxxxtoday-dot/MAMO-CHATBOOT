@@ -39,8 +39,15 @@ export default function AdminPage() {
   const [password, setPassword] = useState('123456');
   const [authError, setAuthError] = useState('');
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'products' | 'chats' | 'settings'>('products');
+  // Tab state (supporting direct deep linking)
+  const [activeTab, setActiveTab] = useState<'products' | 'chats' | 'settings'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab === 'chats' || tab === 'settings' || tab === 'products') {
+      return tab;
+    }
+    return 'products';
+  });
 
   // Firestore states: Settings
   const [storeNameValue, setStoreNameValue] = useState('');
@@ -58,6 +65,9 @@ export default function AdminPage() {
   const [botEmployeeNameValue, setBotEmployeeNameValue] = useState('سارة (ممثلة المبيعات)');
   const [botResponseSpeedValue, setBotResponseSpeedValue] = useState('medium');
   const [botAvatarValue, setBotAvatarValue] = useState('');
+  const [maintenanceModeValue, setMaintenanceModeValue] = useState(false);
+  const [maintenanceMessageValue, setMaintenanceMessageValue] = useState('نحن نقوم ببعض عمليات الصيانة والتحديثات لخدمتكم بشكل أفضل؛ سنعود في أقرب وقت!');
+  const [knowledgeBaseValue, setKnowledgeBaseValue] = useState('');
   const [loadingSettings, setLoadingSettings] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -268,6 +278,9 @@ export default function AdminPage() {
         setBotEmployeeNameValue(data.botEmployeeName || 'سارة (ممثلة المبيعات)');
         setBotResponseSpeedValue(data.botResponseSpeed || 'medium');
         setBotAvatarValue(data.botAvatar || '');
+        setMaintenanceModeValue(!!data.maintenanceMode);
+        setMaintenanceMessageValue(data.maintenanceMessage || 'نحن نقوم ببعض عمليات الصيانة والتحديثات لخدمتكم بشكل أفضل؛ سنعود في أقرب وقت!');
+        setKnowledgeBaseValue(data.knowledgeBase || '');
       } else {
         // Instantiate defaults if settings doesn't exist
         setStoreNameValue('شركة مامو للأجهزة المنزلية والكهربائية');
@@ -285,6 +298,9 @@ export default function AdminPage() {
         setBotEmployeeNameValue('سارة (ممثلة المبيعات)');
         setBotResponseSpeedValue('medium');
         setBotAvatarValue('');
+        setMaintenanceModeValue(false);
+        setMaintenanceMessageValue('نحن نقوم ببعض عمليات الصيانة والتحديثات لخدمتكم بشكل أفضل؛ سنعود في أقرب وقت!');
+        setKnowledgeBaseValue('');
       }
       setLoadingSettings(false);
     }, (error) => {
@@ -315,6 +331,9 @@ export default function AdminPage() {
         botEmployeeName: botEmployeeNameValue.trim(),
         botResponseSpeed: botResponseSpeedValue.trim(),
         botAvatar: botAvatarValue.trim(),
+        maintenanceMode: !!maintenanceModeValue,
+        maintenanceMessage: maintenanceMessageValue.trim(),
+        knowledgeBase: knowledgeBaseValue.trim(),
         currency: currencyValue,
         updatedAt: new Date().toISOString()
       });
@@ -1899,6 +1918,90 @@ export default function AdminPage() {
                     </div>
                   </div>
 
+                  {/* Part 4: Maintenance Customization & Knowledge Base */}
+                  <div className={`border rounded p-6 space-y-4 ${
+                    darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-150 shadow-xs'
+                  }`}>
+                    <h3 className="text-xs font-bold font-sans uppercase tracking-wider flex items-center gap-2 text-zinc-500">
+                      <span className="w-1.5 h-3 bg-rose-500 rounded-full" />
+                      <span>🛠️ وضع الصيانة الفورية وقاعدة المعرفة (Knowledge Base)</span>
+                    </h3>
+
+                    {/* Maintenance Toggle */}
+                    <div className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
+                      maintenanceModeValue 
+                        ? (darkMode ? 'bg-red-950/20 border-red-950 text-red-150' : 'bg-red-50 border-red-200 text-red-950') 
+                        : (darkMode ? 'bg-zinc-950/40 border-zinc-800/60' : 'bg-zinc-50 border-zinc-150')
+                    }`}>
+                      <div className="space-y-1">
+                        <label className={`text-xs font-bold flex items-center gap-2 cursor-pointer ${darkMode ? 'text-zinc-200' : 'text-gray-900'}`}>
+                          <input
+                            type="checkbox"
+                            checked={maintenanceModeValue}
+                            onChange={(e) => setMaintenanceModeValue(e.target.checked)}
+                            className="w-4 h-4 rounded text-red-600 border-gray-300 focus:ring-red-500 cursor-pointer"
+                          />
+                          <span>تفعيل وضع صيانة الشات بوت (Maintenance Mode)</span>
+                        </label>
+                        <p className={`text-[10px] leading-relaxed ${darkMode ? 'text-zinc-400' : 'text-gray-500'}`}>
+                          عند تفعيل هذا الخيار، سيتم حجب واجهة المحادثة للعملاء مؤقتاً، وعرض رسالة تفيد بوجود صيانة أو تحديثات دون تفعيل المعالجة التلقائية.
+                        </p>
+                      </div>
+                      <div className="shrink-0 col-span-1">
+                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold tracking-wider border ${
+                          maintenanceModeValue 
+                            ? 'bg-red-500/15 text-red-500 border-red-500/30 animate-pulse' 
+                            : 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'
+                        }`}>
+                          {maintenanceModeValue ? 'تحت الصيانة حالياً' : 'متصل ونشط'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Maintenance Message Field - Visible always, but highlighted when mode is active */}
+                    <div className="space-y-1.5">
+                      <label className={`block text-[11px] font-bold ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>
+                        رسالة جدار الصيانة المعروضة للجمهور
+                      </label>
+                      <textarea
+                        value={maintenanceMessageValue}
+                        onChange={(e) => setMaintenanceMessageValue(e.target.value)}
+                        placeholder="مثال: نحن نقوم ببعض العمليات والصيانة والتحديثات لخدمتكم بشكل أفضل، سنعود قريباً جداً!"
+                        rows={2}
+                        className={`w-full px-3 py-2 border rounded text-xs focus:outline-none transition-all leading-relaxed ${
+                          darkMode 
+                            ? 'bg-zinc-950 border-zinc-800 text-zinc-150 focus:border-zinc-700' 
+                            : 'bg-white border-gray-200 text-gray-950 focus:border-black'
+                        }`}
+                      />
+                    </div>
+
+                    {/* Knowledge Base Section */}
+                    <div className="space-y-1.5 pt-2 border-t border-dashed border-zinc-200 dark:border-zinc-800">
+                      <label className={`block text-[11px] font-bold ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>
+                        قاعدة معرفة المتجر الإضافية وحلول المشاكل (Knowledge Base)
+                      </label>
+                      <textarea
+                        value={knowledgeBaseValue}
+                        onChange={(e) => setKnowledgeBaseValue(e.target.value)}
+                        placeholder="مثال:
+- عنوان المتجر: الرياض، حي الياسمين، شارع التخصصي.
+- أوقات العمل الرسمية: يومياً من 10 صباحًا وحتى 10 مساءً، ما عدا الجمعة من 4 مساءً حتى 10 مساءً.
+- سياسة التوصيل: نوفر توصيلًا مجانيًا للأجهزة الكهربائية الكبيرة داخل مدينة الرياض، والولايات القريبة يستغرق التوصيل من 2-4 أيام عمل.
+- الأسئلة الشائعة: هل يوجد تقسيط؟ نعم، نوفر خدمة تقسيط ميسر عن طريق تابي وتمارا بدون فوائد."
+                        rows={6}
+                        className={`w-full p-3 border rounded text-xs focus:outline-none transition-all leading-relaxed font-sans ${
+                          darkMode 
+                            ? 'bg-zinc-950 border-zinc-800 text-zinc-150 focus:border-zinc-700' 
+                            : 'bg-white border-gray-200 text-gray-950 focus:border-black'
+                        }`}
+                      />
+                      <span className="text-[10px] text-gray-400 block mt-1 font-semibold leading-relaxed">
+                        💡 تلميح: استخدم قاعدة المعرفة هذه لتغذية الشات بوت الذكي بسياسات وتفاصيل المنشأة الدقيقة. سيقوم Gemini بدمج هذه الحقائق والإجابة بدقة على أسئلة العملاء بدون الخروج عنها!
+                      </span>
+                    </div>
+                  </div>
+
                   {/* Buttons */}
                   <div className="flex justify-end pt-2">
                     <button
@@ -2013,17 +2116,17 @@ export default function AdminPage() {
                           alt="Store Chatbot QR Code"
                           className="w-36 h-36 object-contain mx-auto transition-transform duration-200"
                         />
-                        {/* Center branding badge with store name inside */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        {/* Center branding badge tightly integrated as a native part of the QR code */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
                           <div 
-                            className="bg-white border rounded px-1.5 py-0.5 shadow-md flex items-center justify-center select-none max-w-[62px] overflow-hidden" 
+                            className="bg-white border-3 rounded-md w-[48px] h-[48px] flex flex-col items-center justify-center text-center px-0.5" 
                             style={{ borderColor: botPrimaryColorValue }}
                           >
                             <span 
-                              className="text-[7.5px] font-extrabold tracking-tight truncate leading-none text-center block w-full" 
+                              className="text-[8px] font-black tracking-tighter uppercase leading-none text-center block max-w-full truncate px-0.5" 
                               style={{ color: botPrimaryColorValue }}
                             >
-                              {storeNameValue ? storeNameValue.split(' ')[0] : 'مامو'}
+                              {storeNameValue ? storeNameValue.split(' ')[0] : 'MAMO'}
                             </span>
                           </div>
                         </div>

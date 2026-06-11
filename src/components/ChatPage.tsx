@@ -397,6 +397,103 @@ export default function ChatPage() {
     }
   };
 
+  if (settings?.maintenanceMode) {
+    const waNumber = settings.whatsapp || '966500000000';
+    const cleanNum = waNumber.replace(/\+/g, '').replace(/[\s-]/g, '');
+    const phoneNum = settings.contactNumber || '';
+
+    return (
+      <div className="flex flex-col min-h-screen bg-gray-50 selection:bg-rose-50 font-sans" dir="rtl">
+        {/* Simple Clean Header */}
+        <header className="flex items-center justify-between px-4 sm:px-8 py-4 bg-white border-b border-gray-100 shadow-xs flex-none">
+          <div className="flex items-center gap-3">
+            {settings?.logoUrl ? (
+              <img src={settings.logoUrl} alt="logo" className="w-9 h-9 rounded-full object-contain border border-gray-100" />
+            ) : (
+              <div 
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                style={{ backgroundColor: settings?.botPrimaryColor || '#800020' }}
+              >
+                <span className="w-3.5 h-3.5 border-2 border-white rounded-full bg-white/20"></span>
+              </div>
+            )}
+            <div>
+              <h1 className="text-sm sm:text-base font-bold text-gray-900 leading-tight">
+                {settings?.storeName || 'شركة الأجهزة الكهربائية والمنزلية'}
+              </h1>
+              <p className="text-[11px] text-gray-400 font-medium">مستشار الرد الآلي والمبيعات المباشر</p>
+            </div>
+          </div>
+        </header>
+
+        {/* Maintenance Container */}
+        <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-xl mx-auto text-center w-full">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="w-full bg-white border border-gray-150 rounded-3xl p-6 sm:p-10 shadow-md space-y-6"
+          >
+            {/* Maintenance Icon Circle */}
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 animate-pulse">
+              <AlertTriangle className="w-8 h-8" />
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">المساعد الذكي للمتجر في مرحلة الصيانة</h2>
+              <span className="inline-block px-3 py-1 bg-red-105 text-red-700 text-[10px] font-bold rounded-full border border-red-200">
+                سنعود قريباً جداً ⏱️
+              </span>
+            </div>
+
+            {/* Custom Maintenance Message */}
+            <div className="bg-gray-50 rounded-2xl p-4.5 border border-gray-100 text-xs sm:text-sm text-gray-650 leading-relaxed font-semibold">
+              {settings.maintenanceMessage || 'نحن نقوم ببعض التحسينات والصيانة حالياً لتقديم أفضل خدمة ممكنة. سنعود للخدمة قريباً جداً لتلبية وتوفير كافة استفساراتكم!'}
+            </div>
+
+            {/* Direct contact alternatives */}
+            <div className="space-y-4 pt-4 border-t border-gray-150">
+              <p className="text-[10px] font-bold text-zinc-450 uppercase tracking-wider">
+                هل ترغب في طلب الأجهزة أو الاستفسار المباشر؟
+              </p>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                ممثلو المبيعات والخدمة في المتجر متاحون لمساعدتك يدوياً في الحال، وتزويدك بالردود الكافية وتنسيق الحجز والشحن على الفور!
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                {waNumber && (
+                  <a
+                    href={`https://wa.me/${cleanNum}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-2 px-5 py-3.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>تواصل مبيعات (واتساب)</span>
+                  </a>
+                )}
+                {phoneNum && (
+                  <a
+                    href={`tel:${phoneNum}`}
+                    className="flex items-center justify-center gap-2 px-5 py-3.5 bg-zinc-900 hover:bg-black active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span>اتصال دعم مباشر</span>
+                  </a>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Footer branding */}
+          <div className="mt-8 text-center text-[10px] text-zinc-400 font-semibold">
+            &copy; {new Date().getFullYear()} {settings?.storeName || 'شركة الأجهزة الكهربائية والمنزلية'}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-white selection:bg-neutral-100 font-sans" dir="rtl">
       {/* Dynamic Header */}
