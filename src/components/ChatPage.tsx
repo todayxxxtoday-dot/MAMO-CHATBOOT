@@ -339,7 +339,13 @@ export default function ChatPage() {
                 ) : (
                   /* Bot Messenger Style Bubble with Profile Photo */
                   <div className="flex items-end gap-2.5 max-w-[85%] sm:max-w-[75%]">
-                    {settings?.logoUrl ? (
+                    {settings?.botAvatar ? (
+                      <img 
+                        src={settings.botAvatar} 
+                        alt="Bot Avatar" 
+                        className="w-8 h-8 rounded-full object-cover border border-neutral-150 shrink-0 mb-0.5" 
+                      />
+                    ) : settings?.logoUrl ? (
                       <img 
                         src={settings.logoUrl} 
                         alt="Store Logo" 
@@ -384,7 +390,13 @@ export default function ChatPage() {
             className="flex justify-start mb-2"
           >
             <div className="flex items-end gap-2.5 max-w-[85%] sm:max-w-[75%]">
-              {settings?.logoUrl ? (
+              {settings?.botAvatar ? (
+                <img 
+                  src={settings.botAvatar} 
+                  alt="Bot Avatar" 
+                  className="w-8 h-8 rounded-full object-cover border border-neutral-150 shrink-0 mb-0.5" 
+                />
+              ) : settings?.logoUrl ? (
                 <img 
                   src={settings.logoUrl} 
                   alt="Store Logo" 

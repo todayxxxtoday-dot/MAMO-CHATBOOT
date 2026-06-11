@@ -55,6 +55,7 @@ export default function AdminPage() {
   const [botWelcomeMessageValue, setBotWelcomeMessageValue] = useState('');
   const [botEmployeeNameValue, setBotEmployeeNameValue] = useState('سارة (ممثلة المبيعات)');
   const [botResponseSpeedValue, setBotResponseSpeedValue] = useState('medium');
+  const [botAvatarValue, setBotAvatarValue] = useState('');
   const [loadingSettings, setLoadingSettings] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -167,6 +168,7 @@ export default function AdminPage() {
         setBotWelcomeMessageValue(data.botWelcomeMessage || '');
         setBotEmployeeNameValue(data.botEmployeeName || 'سارة (ممثلة المبيعات)');
         setBotResponseSpeedValue(data.botResponseSpeed || 'medium');
+        setBotAvatarValue(data.botAvatar || '');
       } else {
         // Instantiate defaults if settings doesn't exist
         setStoreNameValue('شركة مامو للأجهزة المنزلية والكهربائية');
@@ -181,6 +183,7 @@ export default function AdminPage() {
         setBotInstructionsValue('يرجى الالتزام بالرد على الأسئلة المتعلقة بأسعار وتوفر الأجهزة المنزلية، وتجنب الإجابة على أي أسئلة خارج نطاق ذلك.');
         setBotEmployeeNameValue('سارة (ممثلة المبيعات)');
         setBotResponseSpeedValue('medium');
+        setBotAvatarValue('');
       }
       setLoadingSettings(false);
     }, (error) => {
@@ -209,6 +212,7 @@ export default function AdminPage() {
         botWelcomeMessage: botWelcomeMessageValue.trim(),
         botEmployeeName: botEmployeeNameValue.trim(),
         botResponseSpeed: botResponseSpeedValue.trim(),
+        botAvatar: botAvatarValue.trim(),
         updatedAt: new Date().toISOString()
       });
       alert('تم حفظ إعدادات المتجر والشات بوت بنجاح!');
@@ -1322,6 +1326,21 @@ export default function AdminPage() {
                     </div>
 
                     <div>
+                      <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>الصورة المصغرة للبوت (رابط الصورة Avatar URL)</label>
+                      <input
+                        type="url"
+                        value={botAvatarValue}
+                        onChange={(e) => setBotAvatarValue(e.target.value)}
+                        placeholder="مثال: https://images.unsplash.com/... أو رابط مباشر للصورة"
+                        className={`w-full px-3 py-1.5 border rounded text-xs focus:outline-none transition-all ${
+                          darkMode 
+                            ? 'bg-zinc-950 border-zinc-800 text-zinc-150 focus:border-zinc-700' 
+                            : 'bg-white border-gray-200 text-gray-950 focus:border-black'
+                        }`}
+                      />
+                    </div>
+
+                    <div>
                       <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>رسالة الترحيب التلقائية الأولى للعميل</label>
                       <textarea
                         value={botWelcomeMessageValue}
@@ -1399,9 +1418,19 @@ export default function AdminPage() {
                         {/* Msg stream mock */}
                         <div className="flex-1 overflow-y-auto py-4 space-y-3">
                           {/* Bot msg */}
-                          <div className="flex justify-start">
-                            <div className="max-w-[85%] bg-white border border-gray-150 rounded px-3 py-2.5 text-xs text-gray-800 leading-relaxed shadow-xs">
-                              {botWelcomeMessageValue || 'مرحباً بك! كيف يمكنني مساعدتك اليوم؟'}
+                          <div className="flex justify-start items-end gap-2 text-right">
+                            {botAvatarValue ? (
+                              <img src={botAvatarValue} alt="Bot Avatar Mock" className="w-6 h-6 rounded-full object-cover border border-zinc-100 shrink-0" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-[8px] shrink-0 bg-neutral-100" style={{ backgroundColor: botPrimaryColorValue }}>
+                                <span className="w-1.5 h-1.5 border border-white rounded-xs bg-white/20"></span>
+                              </div>
+                            )}
+                            <div className="flex flex-col text-right max-w-[85%]">
+                              <span className="text-[8px] text-zinc-450 font-bold mb-0.5 mr-0.5 text-right block">{botEmployeeNameValue || 'سارة'}</span>
+                              <div className="bg-[#F0F2F5] text-zinc-900 border border-transparent rounded-[15px] rounded-br-xs px-3 py-2 text-xs leading-relaxed text-right">
+                                {botWelcomeMessageValue || 'مرحباً بك! كيف يمكنني مساعدتك اليوم؟'}
+                              </div>
                             </div>
                           </div>
 
