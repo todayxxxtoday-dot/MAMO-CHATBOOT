@@ -105,40 +105,49 @@ export default function App() {
               </p>
             </motion.div>
 
-            {/* Path Selection Cards - Simplified to beautiful, text-free premium icon buttons */}
-            <div className="flex items-center justify-center gap-6 pt-2">
-              {/* Button 1: Customer Service Assistant (مساعد خدمة العملاء) */}
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-18 h-18 rounded-2xl bg-zinc-100 text-black hover:bg-zinc-200 transition-all flex items-center justify-center cursor-pointer border border-zinc-200/60 shadow-xs"
-                onClick={() => navigateTo('/chat')}
-                title="مساعد خدمة العملاء الذكي"
-              >
-                <MessageSquare className="w-7 h-7" />
-              </motion.button>
+            {/* Path Selection Cards - Beautifully paired with bold explicit Arabic labels below each button */}
+            <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto pt-2">
+              {/* Button 1: Customer Service Assistant */}
+              <div className="flex flex-col items-center gap-2">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-zinc-100 text-black hover:bg-zinc-200 transition-all flex items-center justify-center cursor-pointer border border-zinc-200/60 shadow-xs"
+                  onClick={() => navigateTo('/chat')}
+                  title="مساعد خدمة العملاء الذكي"
+                >
+                  <MessageSquare className="w-7 h-7" />
+                </motion.button>
+                <span className="text-[11px] sm:text-xs font-extrabold text-neutral-800 tracking-tight leading-none">مساعد العملاء</span>
+              </div>
 
-              {/* Button 2: Merchant Platform (منصة التاجر) */}
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-18 h-18 rounded-2xl bg-zinc-900 text-white hover:bg-neutral-850 transition-all flex items-center justify-center cursor-pointer border border-zinc-800 shadow-md"
-                onClick={() => navigateTo('/admin?tab=products')}
-                title="منصة التاجر وإدارة الأجهزة والأسعار"
-              >
-                <ShoppingBag className="w-7 h-7" />
-              </motion.button>
+              {/* Button 2: Merchant Platform */}
+              <div className="flex flex-col items-center gap-2">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-zinc-900 text-white hover:bg-neutral-850 transition-all flex items-center justify-center cursor-pointer border border-zinc-800 shadow-md"
+                  onClick={() => navigateTo('/admin?tab=products')}
+                  title="منصة التاجر وإدارة الأجهزة والأسعار"
+                >
+                  <ShoppingBag className="w-7 h-7" />
+                </motion.button>
+                <span className="text-[11px] sm:text-xs font-extrabold text-neutral-800 tracking-tight leading-none">لوحة التحكم</span>
+              </div>
 
-              {/* Button 3: Inspector / Supervisor (الإشراف) */}
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-18 h-18 rounded-2xl bg-zinc-100 text-zinc-900 hover:bg-neutral-200 transition-all flex items-center justify-center cursor-pointer border border-zinc-200 shadow-sm"
-                onClick={() => navigateTo('/admin?tab=chats')}
-                title="بوابة الرقابة والإشراف على المحادثات"
-              >
-                <ShieldAlert className="w-7 h-7" />
-              </motion.button>
+              {/* Button 3: Inspector / Supervisor */}
+              <div className="flex flex-col items-center gap-2">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-18 h-18 rounded-2xl bg-zinc-100 text-zinc-900 hover:bg-neutral-200 transition-all flex items-center justify-center cursor-pointer border border-zinc-200 shadow-sm"
+                  onClick={() => navigateTo('/admin?tab=chats')}
+                  title="بوابة الرقابة والإشراف على المحادثات"
+                >
+                  <ShieldAlert className="w-7 h-7" />
+                </motion.button>
+                <span className="text-[11px] sm:text-xs font-extrabold text-neutral-800 tracking-tight leading-none">إشراف المحادثات</span>
+              </div>
             </div>
 
             {/* Dynamic QR Code Card - Simplified as requested */}

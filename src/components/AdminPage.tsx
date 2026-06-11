@@ -5,7 +5,8 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  User
+  User,
+  sendEmailVerification
 } from 'firebase/auth';
 import { 
   collection, 
@@ -25,7 +26,8 @@ import {
   Plus, Edit2, Trash2, LogOut, CheckCircle, Search, 
   Filter, Calendar, Archive, MessageSquare, Package, 
   Eye, CornerDownLeft, Circle, Sparkles, LogIn, Lock,
-  Sun, Moon, QrCode, Printer, Download, ExternalLink, Copy, Settings
+  Sun, Moon, QrCode, Printer, Download, ExternalLink, Copy, Settings,
+  ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -38,6 +40,8 @@ export default function AdminPage() {
   const [email, setEmail] = useState('admin@store.com');
   const [password, setPassword] = useState('123456');
   const [authError, setAuthError] = useState('');
+  const [authInfoMsg, setAuthInfoMsg] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
 
   // Tab state (supporting direct deep linking)
   const [activeTab, setActiveTab] = useState<'products' | 'chats' | 'settings'>(() => {
@@ -206,6 +210,11 @@ export default function AdminPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+      if (user) {
+        setEmailVerified(user.emailVerified || user.email === 'admin@store.com');
+      } else {
+        setEmailVerified(false);
+      }
       setAuthLoading(false);
     });
     return unsubscribe;
@@ -345,18 +354,80 @@ export default function AdminPage() {
     }
   };
 
+  // Password Strength Validator
+  const validatePassword = (pwd: string) => {
+    if (pwd.length < 8) return 'يجب أن لا تقل كلمة المرور عن 8 خانات.';
+    if (!/[A-Z]/.test(pwd)) return 'يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل (A-Z).';
+    if (!/[a-z]/.test(pwd)) return 'يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل (a-z).';
+    if (!/[0-9]/.test(pwd)) return 'يجب أن تحتوي كلمة المرور على رقم واحد على الأقل (0-9).';
+    if (!/[@$!%*?&]/.test(pwd)) return 'يجب أن تحتوي كلمة المرور على رمز خاص واحد على الأقل (مثل: @$!%*?&).';
+    return null;
+  };
+
+  // Check email verification status manually
+  const checkEmailVerification = async () => {
+    if (auth.currentUser) {
+      try {
+        await auth.currentUser.reload();
+        const updatedUser = auth.currentUser;
+        setCurrentUser(updatedUser);
+        const isVerified = updatedUser.emailVerified || updatedUser.email === 'admin@store.com';
+        setEmailVerified(isVerified);
+        if (isVerified) {
+          alert('تهانينا! تم تأكيد بريدك الإلكتروني بنجاح، ويمكنك الآن استخدام كامل مزايا اللوحة.');
+        } else {
+          alert('لم يتم تأكيد البريد الإلكتروني بعد. يرجى مراجعة الرابط المرسل لبريدك الإلكتروني، والنقر عليه للتفعيل.');
+        }
+      } catch (checkErr: any) {
+        console.error(checkErr);
+        alert('حدث خطأ أثناء فحص حالة البريد الإلكتروني: ' + (checkErr?.message || 'يرجى المحاولة لاحقاً.'));
+      }
+    }
+  };
+
+  // Re-send verification email
+  const resendVerificationEmail = async () => {
+    if (auth.currentUser) {
+      try {
+        await sendEmailVerification(auth.currentUser);
+        alert('تم إرسال رابط تأكيد جديد إلى بريدك الإلكتروني بنجاح! يرجى مراجعة صندوق الوارد.');
+      } catch (resendErr: any) {
+        console.error(resendErr);
+        alert('فشل إرسال رابط التحقق: ' + (resendErr?.message || 'يرجى تكرار المحاولة بعد قليل.'));
+      }
+    }
+  };
+
   // Handle Login or Signup securely
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
+    setAuthInfoMsg('');
     if (!email || !password) {
       setAuthError('يرجى كتابة البريد الإلكتروني وكلمة المرور.');
       return;
     }
 
+    if (isRegisterMode) {
+      const pwdError = validatePassword(password);
+      if (pwdError) {
+        setAuthError(pwdError);
+        return;
+      }
+    }
+
     try {
       if (isRegisterMode) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        if (userCred.user) {
+          try {
+            await sendEmailVerification(userCred.user);
+            setAuthInfoMsg('تم إنشاء الحساب بنجاح! تم إرسال رابط تأكيد إلى بريدك الإلكتروني. يرجى النقر عليه لتتمكن من الدخول.');
+          } catch (verifySendErr) {
+            console.error('Email verification direct trigger failed:', verifySendErr);
+            setAuthInfoMsg('تم إنشاء الحساب بنجاح! يرجى مراجعة الصندوق الوارد وتأكيد حسابك أو تحديث الحالة.');
+          }
+        }
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
@@ -365,7 +436,7 @@ export default function AdminPage() {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         setAuthError('بيانات الدخول غير صحيحة، يرجى إعادة المحاولة.');
       } else if (err.code === 'auth/weak-password') {
-        setAuthError('كلمة المرور ضعيفة جداً، يرجى كتابة 6 أحرف على الأقل.');
+        setAuthError('كلمة المرور ضعيفة جداً، يرجى كتابة 8 أحرف تحتوي على رموز تشفير.');
       } else if (err.code === 'auth/email-already-in-use') {
         setAuthError('البريد الإلكتروني مسجل بالفعل لمستخدم آخر.');
       } else {
@@ -586,6 +657,13 @@ export default function AdminPage() {
               </div>
             )}
 
+            {authInfoMsg && (
+              <div className="text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 rounded p-3 font-semibold flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full shrink-0" />
+                <span>{authInfoMsg}</span>
+              </div>
+            )}
+
             <button
               type="submit"
               className="w-full py-2.5 bg-black hover:bg-neutral-900 text-white rounded text-xs font-bold cursor-pointer transition-colors flex items-center justify-center gap-2"
@@ -616,16 +694,71 @@ export default function AdminPage() {
     );
   }
 
+  if (currentUser && !emailVerified) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12 font-sans selection:bg-neutral-100" dir="rtl">
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white border border-gray-150 shadow-sm rounded-xl p-8 max-w-md w-full text-center space-y-6"
+        >
+          <div className="inline-flex w-12 h-12 bg-amber-50 text-amber-600 rounded-full items-center justify-center border border-amber-100 mx-auto">
+            <Lock className="w-6 h-6" />
+          </div>
+          
+          <div className="space-y-2">
+            <h1 className="text-lg font-black text-gray-950">تأكيد البريد الإلكتروني مطلوب</h1>
+            <p className="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
+              لقد قمنا بإرسال رابط التحقق إلى <span className="font-mono font-bold text-gray-850">{currentUser.email}</span>. يرجى مراجعة صندوق الوارد (أو البريد المزعج/Spam) والنقر على الرابط لتنشيط لوحة التاجر.
+            </p>
+          </div>
+
+          <div className="bg-amber-50/50 border border-amber-200/55 rounded-xl p-3.5 text-right text-[11px] text-amber-800 leading-relaxed">
+            🌿 <strong>ملاحظة تجريبية:</strong> إذا واجهت مشكلة في وصول رسائل البريد بسبب الحظر أو القيود الإقليمية، تذكر أن الحساب التجريبي الافتراضي <span className="font-mono bg-white px-1 py-0.5 rounded border border-amber-200">admin@store.com</span> معتمد تلقائياً دون تفعيل للتجربة الفورية والمباشرة للوحة التاجر.
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <button
+              onClick={checkEmailVerification}
+              className="w-full py-2.5 bg-black hover:bg-neutral-900 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center justify-center gap-2"
+            >
+              <CheckCircle className="w-4 h-4" />
+              <span>لقد قمت بالتأكيد والمتابعة (تحديث الحالة)</span>
+            </button>
+
+            <button
+              onClick={resendVerificationEmail}
+              className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-gray-700 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center justify-center gap-2 border border-neutral-200"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span>إرسال رابط التأكيد مجدداً</span>
+            </button>
+          </div>
+
+          <div className="border-t border-gray-100 pt-4">
+            <button
+              onClick={handleLogout}
+              className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors flex items-center justify-center gap-1.5 mx-auto"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>الخروج والعودة لصفحة الدخول</span>
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   // Admin Workspace View
   return (
     <div className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
       darkMode ? 'bg-zinc-950 text-zinc-100' : 'bg-white text-gray-900'
     }`} dir="rtl">
       {/* Admin Navbar */}
-      <nav className={`border-b h-16 px-8 sticky top-0 z-45 flex items-center transition-colors duration-200 ${
-        darkMode ? 'bg-zinc-90 w-full border-zinc-800 bg-zinc-900' : 'bg-white border-gray-100'
+      <nav className={`border-b py-3 sm:h-16 px-4 sm:px-8 sticky top-0 z-45 flex items-center transition-colors duration-200 ${
+        darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'
       }`}>
-        <div className="max-w-7xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-7xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded flex items-center justify-center ${darkMode ? 'bg-zinc-100' : 'bg-black'}`}>
               <div className={`w-4 h-4 border-2 ${darkMode ? 'border-zinc-900' : 'border-white'}`}></div>
@@ -1354,7 +1487,7 @@ export default function AdminPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             {/* LEFT COLUMN: CONVERSATION LISTS (5Cols) */}
-            <div className="lg:col-span-5 space-y-4">
+            <div className={`lg:col-span-5 space-y-4 ${selectedConversation ? 'hidden lg:block' : 'block'}`}>
               <div className={`border-b pb-2.5 ${darkMode ? 'border-zinc-800' : 'border-gray-100'}`}>
                 <h2 className={`text-md font-bold ${darkMode ? 'text-zinc-100' : 'text-gray-900'}`}>محادثات العملاء</h2>
               </div>
@@ -1489,18 +1622,28 @@ export default function AdminPage() {
             </div>
 
             {/* RIGHT COLUMN: DETAIL CHAT INSPECTOR (7Cols) */}
-            <div className="lg:col-span-7">
+            <div className={`lg:col-span-7 ${selectedConversation ? 'block' : 'hidden lg:block'}`}>
               {selectedConversation ? (
                 <div className={`border rounded flex flex-col h-[640px] transition-all ${
-                  darkMode ? 'bg-zinc-90 w-full border-zinc-805' : 'bg-white border-gray-150 shadow-xs'
+                  darkMode ? 'bg-zinc-900 w-full border-zinc-805' : 'bg-white border-gray-150 shadow-xs'
                 }`}>
                   {/* Detailed inspector header */}
                   <div className={`px-6 h-16 border-b flex items-center justify-between shrink-0 mb-4 ${
                     darkMode ? 'border-zinc-800 bg-zinc-900/40' : 'bg-white border-gray-100'
                   }`}>
-                    <div>
-                      <h3 className={`text-sm font-bold ${darkMode ? 'text-zinc-100' : 'text-gray-900'}`}>{selectedConversation.customerName}</h3>
-                      <p className="text-[10px] text-gray-400 font-bold mt-0.5">المعرف الفني: <span className="font-mono">{selectedConversation.id}</span></p>
+                    <div className="flex items-center gap-3">
+                      {/* Responsive Back Button for Mobile View */}
+                      <button
+                        onClick={() => setSelectedConversation(null)}
+                        className="lg:hidden p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500 dark:text-zinc-400 transition-colors"
+                        title="العودة لقائمة المحادثات"
+                      >
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                      <div>
+                        <h3 className={`text-sm font-bold ${darkMode ? 'text-zinc-100' : 'text-gray-900'}`}>{selectedConversation.customerName}</h3>
+                        <p className="text-[10px] text-gray-400 font-bold mt-0.5">المعرف الفني: <span className="font-mono">{selectedConversation.id}</span></p>
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1.5 flex-wrap">
