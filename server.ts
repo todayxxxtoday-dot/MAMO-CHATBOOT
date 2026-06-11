@@ -257,8 +257,9 @@ ${customInstructions}
       model: 'gemini-3.5-flash',
       contents: formattedContents,
       config: {
-        systemInstruction,
-        temperature: 0.7
+        systemInstruction: systemInstruction + '\n⚠️ تنبيه هام لسرعة فائقة: يجب أن تكون الإجابات مختصرة جداً، دقيقة ومباشرة (في حدود سطرين إلى 3 أسطر فقط كحد أقصى) لتوفير سرعة استجابة فائقة للعميل وسرعة الأداء.',
+        temperature: 0.3,
+        maxOutputTokens: 250
       }
     });
 

@@ -25,7 +25,7 @@ import {
   Plus, Edit2, Trash2, LogOut, CheckCircle, Search, 
   Filter, Calendar, Archive, MessageSquare, Package, 
   Eye, CornerDownLeft, Circle, Sparkles, LogIn, Lock,
-  Sun, Moon, QrCode, Printer, Download, ExternalLink, Copy
+  Sun, Moon, QrCode, Printer, Download, ExternalLink, Copy, Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -528,33 +528,48 @@ export default function AdminPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab('products')}
-              className={`px-4 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${
+              className={`relative p-2.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
                 activeTab === 'products'
-                  ? (darkMode ? 'bg-zinc-100 text-zinc-950 font-bold' : 'bg-black text-white font-bold')
-                  : (darkMode ? 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:bg-zinc-850' : 'bg-white text-gray-500 border border-gray-150 hover:bg-gray-50/50')
+                  ? (darkMode ? 'bg-zinc-100 border-zinc-100 text-zinc-950 font-bold' : 'bg-black border-black text-white font-bold')
+                  : (darkMode ? 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-850' : 'bg-white text-gray-500 border-gray-150 hover:bg-gray-50/50')
               }`}
+              title={`إدارة المنتجات والمخزن (${products.length} من المنتجات)`}
             >
-              المنتجات ({products.length})
+              <Package className="w-5 h-5" />
+              {products.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-indigo-500 text-white font-mono font-bold text-[8px] rounded-full px-1.5 py-0.5 shadow-sm scale-90">
+                  {products.length}
+                </span>
+              )}
             </button>
+
             <button
               onClick={() => setActiveTab('chats')}
-              className={`px-4 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${
+              className={`relative p-2.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
                 activeTab === 'chats'
-                  ? (darkMode ? 'bg-zinc-100 text-zinc-950 font-bold' : 'bg-black text-white font-bold')
-                  : (darkMode ? 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:bg-zinc-850' : 'bg-white text-gray-500 border border-gray-150 hover:bg-gray-50/50')
+                  ? (darkMode ? 'bg-zinc-100 border-zinc-100 text-zinc-950 font-bold' : 'bg-black border-black text-white font-bold')
+                  : (darkMode ? 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-850' : 'bg-white text-gray-500 border-gray-150 hover:bg-gray-50/50')
               }`}
+              title={`المحادثات الجارية والعملاء (${conversations.length} محادثة)`}
             >
-              المحادثات ({conversations.length})
+              <MessageSquare className="w-5 h-5" />
+              {conversations.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white font-mono font-bold text-[8px] rounded-full px-1.5 py-0.5 shadow-sm scale-90">
+                  {conversations.length}
+                </span>
+              )}
             </button>
+
             <button
               onClick={() => setActiveTab('settings')}
-              className={`px-4 py-2 rounded text-xs font-semibold transition-all cursor-pointer ${
+              className={`relative p-2.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
                 activeTab === 'settings'
-                  ? (darkMode ? 'bg-zinc-100 text-zinc-950 font-bold' : 'bg-black text-white font-bold')
-                  : (darkMode ? 'bg-zinc-900 text-zinc-400 border border-zinc-800 hover:bg-zinc-850' : 'bg-white text-gray-500 border border-gray-150 hover:bg-gray-50/50')
+                  ? (darkMode ? 'bg-zinc-100 border-zinc-100 text-zinc-950 font-bold' : 'bg-black border-black text-white font-bold')
+                  : (darkMode ? 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-850' : 'bg-white text-gray-500 border-gray-150 hover:bg-gray-50/50')
               }`}
+              title="إعدادات المتجر وهوية الشات بوت"
             >
-              إعدادات المتجر والشات بوت
+              <Settings className="w-5 h-5" />
             </button>
             <div className={`h-4 w-px mx-1 ${darkMode ? 'bg-zinc-800' : 'bg-gray-200'}`}></div>
 
@@ -594,16 +609,13 @@ export default function AdminPage() {
         {/* TAB 1: PRODUCTS INVENTORY */}
         {activeTab === 'products' && (
           <div className="space-y-6">
-            <div className={`flex items-center justify-between border-b pb-4 ${
+            <div className={`flex items-center justify-between border-b pb-2.5 ${
               darkMode ? 'border-zinc-800' : 'border-gray-100'
             }`}>
               <div>
-                <h2 className={`text-lg font-bold transition-colors ${
+                <h2 className={`text-md font-bold transition-colors ${
                   darkMode ? 'text-zinc-100' : 'text-gray-900'
                 }`}>إدارة المخزون</h2>
-                <p className={`text-xs mt-0.5 ${
-                  darkMode ? 'text-zinc-400' : 'text-gray-400'
-                }`}>أضف المنتجات للذكاء الاصطناعي وحدد أسعارها والكميات المتوفرة بالمستودع.</p>
               </div>
               <button
                 onClick={() => {
@@ -917,9 +929,8 @@ export default function AdminPage() {
             
             {/* LEFT COLUMN: CONVERSATION LISTS (5Cols) */}
             <div className="lg:col-span-5 space-y-4">
-              <div className={`border-b pb-3 ${darkMode ? 'border-zinc-800' : 'border-gray-100'}`}>
-                <h2 className={`text-lg font-bold ${darkMode ? 'text-zinc-100' : 'text-gray-900'}`}>سجلات محادثات العملاء</h2>
-                <p className={`text-xs mt-0.5 ${darkMode ? 'text-zinc-400' : 'text-gray-400'}`}>تصفح سجلات الرسائل الفورية المتبادلة بين العملاء والذكاء الاصطناعي لتحليل تيسير المبيعات.</p>
+              <div className={`border-b pb-2.5 ${darkMode ? 'border-zinc-800' : 'border-gray-100'}`}>
+                <h2 className={`text-md font-bold ${darkMode ? 'text-zinc-100' : 'text-gray-900'}`}>محادثات العملاء</h2>
               </div>
 
               {/* Advanced Filter Bars */}
@@ -1177,11 +1188,8 @@ export default function AdminPage() {
         {/* TAB 3: STORE & CHATBOT SETTINGS */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
-            <div className={`border-b pb-4 ${darkMode ? 'border-zinc-800' : 'border-gray-100'}`}>
-              <h2 className={`text-lg font-bold ${darkMode ? 'text-zinc-100' : 'text-gray-900'}`}>إعدادات المتجر وتخصيص الشات بوت</h2>
-              <p className={`text-xs mt-0.5 ${darkMode ? 'text-zinc-400' : 'text-gray-400'}`}>
-                خصص بيانات المتجر الأساسية، قنوات التواصل المباشر، مظهر الشات بوت والتعليمات التي يتبعها للرد على العملاء.
-              </p>
+            <div className={`border-b pb-2.5 ${darkMode ? 'border-zinc-800' : 'border-gray-100'}`}>
+              <h2 className={`text-md font-bold ${darkMode ? 'text-zinc-100' : 'text-gray-900'}`}>إعدادات هوية المتجر والذكاء الاصطناعي</h2>
             </div>
 
             {loadingSettings ? (
@@ -1585,10 +1593,10 @@ export default function AdminPage() {
                         <span>الرموز السريعة والمباشرة للمساعد الذكي</span>
                       </h3>
                       
-                      <p className={`text-[11px] leading-relaxed max-w-xs mx-auto ${
+                      <p className={`text-[11px] font-medium leading-relaxed max-w-xs mx-auto ${
                         darkMode ? 'text-zinc-400' : 'text-gray-500'
                       }`}>
-                        امسح الباركود مخصص اللون أدناه بكاميرا الهاتف المحمول لتوجيه العملاء فوراً إلى نافذة المحادثة والشات بوت فقط دون كشف لوحة الإشراف.
+                        امسح الباركود بكاميرا الجوال للانتقال لصفحة المحادثة مباشرة.
                       </p>
 
                       {/* QR Image Frame */}
@@ -1598,10 +1606,18 @@ export default function AdminPage() {
                           alt="Store Chatbot QR Code"
                           className="w-36 h-36 object-contain mx-auto transition-transform duration-200"
                         />
-                        {/* Tiny center branding accent using custom color */}
+                        {/* Center branding badge with store name inside */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className="w-5 h-5 bg-white border p-0.5 rounded shadow-xs" style={{ borderColor: botPrimaryColorValue }}>
-                            <div className="w-full h-full rounded-xs" style={{ backgroundColor: botPrimaryColorValue }} />
+                          <div 
+                            className="bg-white border rounded px-1.5 py-0.5 shadow-md flex items-center justify-center select-none max-w-[62px] overflow-hidden" 
+                            style={{ borderColor: botPrimaryColorValue }}
+                          >
+                            <span 
+                              className="text-[7.5px] font-extrabold tracking-tight truncate leading-none text-center block w-full" 
+                              style={{ color: botPrimaryColorValue }}
+                            >
+                              {storeNameValue ? storeNameValue.split(' ')[0] : 'مامو'}
+                            </span>
                           </div>
                         </div>
                       </div>

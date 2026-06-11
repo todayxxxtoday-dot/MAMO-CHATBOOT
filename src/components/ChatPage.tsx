@@ -3,7 +3,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { collection, doc, setDoc, arrayUnion, updateDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { Message, Conversation } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, Sparkles, AlertCircle, MapPin, Phone, MessageCircle, Mail, Trash2, Archive } from 'lucide-react';
+import { Send, Sparkles, AlertCircle, AlertTriangle, Bug, MapPin, Phone, MessageCircle, Mail, Trash2, Archive } from 'lucide-react';
 
 function TypewriterText({ text }: { text: string }) {
   const [displayedText, setDisplayedText] = useState('');
@@ -43,6 +43,11 @@ export default function ChatPage() {
   const [settings, setSettings] = useState<any>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // States for reporting bugs/errors to WhatsApp 0938850783
+  const [showBugModal, setShowBugModal] = useState(false);
+  const [bugType, setBugType] = useState('بطء في استجابة المساعد الذكي');
+  const [bugDetails, setBugDetails] = useState('');
 
   const getGreeting = (name?: string, currentSettings?: any) => {
     const bType = currentSettings?.businessType || 'شركة';
@@ -185,6 +190,22 @@ export default function ChatPage() {
     }
   };
 
+  // Compile specific bug/error report details and send directly to developer via WhatsApp
+  const handleSendBugReport = () => {
+    const cleanPhone = '963938850783'; 
+    const messageText = `📋 *تقرير إبلاغ عن مشكلة/خطأ في المساعد الذكي*\n\n` +
+      `👤 *نوع الخطأ:* ${bugType}\n` +
+      `📝 *التفاصيل المحددة:* ${bugDetails.trim() ? bugDetails.trim() : 'لا توجد تفاصيل إضافية مضافة.'}\n\n` +
+      `🆔 *رقم العميل:* ${customerId || 'غير معروف'}\n` +
+      `💬 *معرف المحادثة:* ${conversationId || 'لا يوجد'}\n` +
+      `🕒 *تاريخ البلاغ:* ${new Date().toLocaleString('ar-EG')}`;
+
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(messageText)}`;
+    window.open(waUrl, '_blank');
+    setShowBugModal(false);
+    setBugDetails('');
+  };
+
   // Soft auto-scroll to latest messaging context
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -325,10 +346,10 @@ export default function ChatPage() {
 
       // Get configuration delay
       const delaySpeed = settings?.botResponseSpeed || 'medium';
-      let delayMs = 1500; // default medium
-      if (delaySpeed === 'instant') delayMs = 50;
-      else if (delaySpeed === 'fast') delayMs = 700;
-      else if (delaySpeed === 'slow') delayMs = 3200;
+      let delayMs = 350; // default medium (highly optimized from 1500ms)
+      if (delaySpeed === 'instant') delayMs = 40;
+      else if (delaySpeed === 'fast') delayMs = 150;
+      else if (delaySpeed === 'slow') delayMs = 1000;
 
       setTimeout(async () => {
         const botMessage: Message = {
@@ -436,6 +457,16 @@ export default function ChatPage() {
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span className="hidden lg:inline">مسح المحادثة وحذفها</span>
+            </button>
+
+            {/* Report Bug button */}
+            <button
+              onClick={() => setShowBugModal(true)}
+              title="إبلاغ عن خطأ أو مشكلة فنية"
+              className="p-1.5 px-3 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 hover:text-amber-800 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+              <span>إبلاغ عن خطأ</span>
             </button>
           </div>
         </div>
@@ -597,6 +628,109 @@ export default function ChatPage() {
           </form>
         </div>
       </footer>
+
+      {/* Bug Report Modal */}
+      <AnimatePresence>
+        {showBugModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto" dir="rtl">
+            <div className="flex min-h-screen items-center justify-center p-4">
+              {/* Back Drop Overlay with Motion */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => {
+                  setShowBugModal(false);
+                  setBugDetails('');
+                }}
+                className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+              />
+
+              {/* Modal Body with Entry Animation */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                className="relative transform overflow-hidden rounded-2xl bg-white p-6 justify-center w-full max-w-sm shadow-2xl border border-gray-150 transition-all z-10 text-right font-sans"
+              >
+                {/* Header with Title and Icon */}
+                <div className="flex items-center gap-2.5 pb-4 mb-4 border-b border-gray-100">
+                  <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                    <Bug className="w-5 h-5 text-red-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-gray-905 leading-tight">إرسال تقرير إبلاغ عن خطأ فني</h3>
+                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">سيتم تحويلك مباشرة مع التفاصيل لتطبيق الواتساب الخاص بالدعم</p>
+                  </div>
+                </div>
+
+                {/* Bug Type selector */}
+                <div className="space-y-2 mb-4">
+                  <label className="block text-xs font-extrabold text-gray-750">حدد نوع الخطأ أو المشكلة الفنية:</label>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {[
+                      'بطء في استجابة المساعد الذكي',
+                      'مواصفات أو أسعار المنتجات معروضة بشكل خاطئ',
+                      'توقف المحادثة وعدم استقبال الرسائل',
+                      'مشكلة تقنية في تصفح الصور أو الروابط المرجعية',
+                      'غير ذلك (اكتب تفاصيل إضافية في الأسفل)'
+                    ].map((typeOption) => (
+                      <button
+                        key={typeOption}
+                        type="button"
+                        onClick={() => setBugType(typeOption)}
+                        className={`w-full text-right p-2.5 text-xs rounded-lg border font-medium transition-all flex items-center justify-between cursor-pointer ${
+                          bugType === typeOption
+                            ? 'bg-red-50/40 border-red-400 text-red-700 font-semibold'
+                            : 'bg-gray-50 border-gray-150 text-gray-650 hover:bg-gray-100/70'
+                        }`}
+                      >
+                        <span>{typeOption}</span>
+                        {bugType === typeOption && (
+                          <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bug custom Description text area */}
+                <div className="space-y-1.5 mb-5">
+                  <label className="block text-xs font-bold text-gray-700">تفاصيل إضافية لتوضيح المشكلة (اختياري):</label>
+                  <textarea
+                    rows={3}
+                    value={bugDetails}
+                    onChange={(e) => setBugDetails(e.target.value)}
+                    placeholder="اكتب هنا أي معلومات تساعد المطور على حل تلك المشكلة بأقرب وقت..."
+                    className="w-full p-2.5 text-xs bg-gray-50 border border-gray-250 rounded-xl focus:outline-none focus:ring-1 focus:ring-red-400 focus:bg-white focus:border-red-450 text-gray-800 transition-all placeholder-gray-400 resize-none h-20"
+                  />
+                </div>
+
+                {/* CTA Action Buttons */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSendBugReport}
+                    className="flex-1 text-white font-extrabold text-xs py-3 px-4 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95"
+                    style={{ backgroundColor: '#25D366' }} // Whatsapp Brand Green Color
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>إرسال البلاغ عبر الواتساب</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowBugModal(false);
+                      setBugDetails('');
+                    }}
+                    className="p-3 text-[11px] font-bold text-gray-500 bg-gray-100 border border-gray-200 rounded-xl hover:bg-gray-150 hover:text-gray-700 transition-all cursor-pointer"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
