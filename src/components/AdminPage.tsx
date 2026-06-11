@@ -369,6 +369,26 @@ export default function AdminPage() {
     }
   };
 
+  const clearAllConversations = async () => {
+    if (conversations.length === 0) {
+      alert('لا توجد محادثات لتصفيرها حالياً.');
+      return;
+    }
+    if (!window.confirm('هل أنت متأكد تماماً من رغبتك في تصفير (مسح) جميع سجلات المحادثات نهائياً من قاعدة البيانات؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    try {
+      setLoadingConversations(true);
+      const querySnapshot = await getDocs(collection(db, 'conversations'));
+      const deletePromises = querySnapshot.docs.map(docSnap => deleteDoc(doc(db, 'conversations', docSnap.id)));
+      await Promise.all(deletePromises);
+      setSelectedConversation(null);
+      alert('تم تصفير وحذف جميع المحادثات بنجاح!');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, 'conversations');
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
+
   // Filtering Logic for Chat Logs
   const filteredConversations = conversations
     .filter(log => {
@@ -937,16 +957,27 @@ export default function AdminPage() {
                   </div>
 
                   {/* Date sort option */}
-                  <button
-                    onClick={() => setDateSort(prev => prev === 'newest' ? 'oldest' : 'newest')}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] border rounded font-bold transition-all cursor-pointer ${
-                      darkMode 
-                        ? 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-zinc-850' 
-                        : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span>{dateSort === 'newest' ? 'الأحدث أولاً' : 'الأقدم أولاً'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setDateSort(prev => prev === 'newest' ? 'oldest' : 'newest')}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 text-[10px] border rounded font-bold transition-all cursor-pointer ${
+                        darkMode 
+                          ? 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:bg-zinc-850' 
+                          : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span>{dateSort === 'newest' ? 'الأحدث أولاً' : 'الأقدم أولاً'}</span>
+                    </button>
+
+                    <button
+                      onClick={clearAllConversations}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] border rounded font-bold transition-all cursor-pointer bg-red-50 border-red-150 text-red-600 hover:bg-red-100 hover:border-red-200 dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/40"
+                      title="حذف وتصفير جميع سجلات المحادثات بالكامل"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>تصفير كافة المحادثات</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
