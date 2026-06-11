@@ -149,6 +149,25 @@ export default function ChatPage() {
     }
   }, [custNum]);
 
+  // Monitor if the active conversation is deleted from Firestore (e.g., deleted by the merchant in the Admin Panel)
+  // If it gets deleted and the chat client has active messages, we silently renew the conversation ID.
+  // This prevents the chat client from re-creating or resurrecting the deleted conversation document.
+  useEffect(() => {
+    if (!conversationId) return;
+    
+    const docRef = doc(db, 'conversations', conversationId);
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (!snapshot.exists() && messages.length > 1) {
+        // Assign a brand-new ID for any future operations in this tab
+        const randomId = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const uniqueConvId = `CH-${Date.now().toString().slice(-6)}-${randomId}`;
+        setConversationId(uniqueConvId);
+      }
+    });
+
+    return unsubscribe;
+  }, [conversationId, messages.length]);
+
   // Archive current chat and start fresh
   const handleArchiveChat = async () => {
     if (!conversationId) return;

@@ -87,6 +87,101 @@ export default function AdminPage() {
   const [prodImageUrl, setProdImageUrl] = useState('');
   const [prodAvailable, setProdAvailable] = useState(true);
 
+  // States for live direct inline products table editing
+  const [viewMode, setViewMode] = useState<'cards' | 'quick-table'>('quick-table');
+  const [modifiedRows, setModifiedRows] = useState<Record<string, Partial<Product>>>({});
+  const [inlineSavingId, setInlineSavingId] = useState<string | null>(null);
+
+  // Quick add row states inside the table
+  const [quickAddName, setQuickAddName] = useState('');
+  const [quickAddBrand, setQuickAddBrand] = useState('');
+  const [quickAddCategory, setQuickAddCategory] = useState('ثلاجات');
+  const [quickAddPrice, setQuickAddPrice] = useState<number>(0);
+  const [quickAddQty, setQuickAddQty] = useState<number>(1);
+  const [quickAddDesc, setQuickAddDesc] = useState('');
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
+
+  const handleCellChange = (pId: string, field: keyof Product, value: any) => {
+    setModifiedRows(prev => ({
+      ...prev,
+      [pId]: {
+        ...prev[pId],
+        [field]: value
+      }
+    }));
+  };
+
+  const getCellValue = (p: Product, field: keyof Product) => {
+    if (modifiedRows[p.id!] && modifiedRows[p.id!][field] !== undefined) {
+      return modifiedRows[p.id!][field];
+    }
+    return p[field];
+  };
+
+  const saveRowInline = async (p: Product) => {
+    const rowChanges = modifiedRows[p.id!];
+    if (!rowChanges) return;
+    
+    setInlineSavingId(p.id!);
+    try {
+      const docRef = doc(db, 'products', p.id!);
+      const finalPayload = {
+        ...p,
+        ...rowChanges,
+        updatedAt: new Date().toISOString()
+      };
+      delete finalPayload.id;
+
+      await updateDoc(docRef, finalPayload);
+      
+      setModifiedRows(prev => {
+        const copy = { ...prev };
+        delete copy[p.id!];
+        return copy;
+      });
+      alert('تم تحديث تفاصيل الجهاز فورا في قاعدة البيانات!');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `products/${p.id}`);
+    } finally {
+      setInlineSavingId(null);
+    }
+  };
+
+  const handleQuickAdd = async () => {
+    if (!quickAddName.trim() || !quickAddBrand.trim() || quickAddPrice <= 0) {
+      alert('يرجى كتابة الاسم والماركة وسعراً صحيحاً لإضافة الجهاز!');
+      return;
+    }
+    setIsQuickAdding(true);
+    try {
+      const payload = {
+        name: quickAddName.trim(),
+        brand: quickAddBrand.trim(),
+        category: quickAddCategory,
+        price: Number(quickAddPrice),
+        quantity: Number(quickAddQty),
+        description: quickAddDesc.trim(),
+        imageUrl: '',
+        isAvailable: true,
+        updatedAt: new Date().toISOString()
+      };
+      await addDoc(collection(db, 'products'), payload);
+      
+      // Reset
+      setQuickAddName('');
+      setQuickAddBrand('');
+      setQuickAddCategory('ثلاجات');
+      setQuickAddPrice(0);
+      setQuickAddQty(1);
+      setQuickAddDesc('');
+      alert('تمت إضافة الجهاز مباشرة وتحديث السجل فورا في Firestore!');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'products');
+    } finally {
+      setIsQuickAdding(false);
+    }
+  };
+
   // Firestore states: Customer Chats Log
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loadingConversations, setLoadingConversations] = useState(false);
@@ -823,6 +918,34 @@ export default function AdminPage() {
               )}
             </AnimatePresence>
 
+            {/* VIEW MODE SELECTOR SWITCH */}
+            <div className={`p-1 flex items-center gap-1 border rounded-xl max-w-md ${
+              darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-gray-50 border-gray-200'
+            }`}>
+              <button
+                type="button"
+                onClick={() => setViewMode('quick-table')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  viewMode === 'quick-table'
+                    ? (darkMode ? 'bg-zinc-100 text-zinc-950 shadow-sm font-extrabold' : 'bg-white border text-black shadow-xs font-extrabold')
+                    : (darkMode ? 'text-zinc-400 hover:text-zinc-250' : 'text-gray-500 hover:text-gray-800')
+                }`}
+              >
+                <span>محرر الأجهزة السريع (تعديل وتحديث فوري)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('cards')}
+                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  viewMode === 'cards'
+                    ? (darkMode ? 'bg-zinc-100 text-zinc-950 shadow-sm' : 'bg-white border text-black shadow-xs font-extrabold')
+                    : (darkMode ? 'text-zinc-400 hover:text-zinc-250' : 'text-gray-500 hover:text-gray-800')
+                }`}
+              >
+                <span>عرض كبطاقات للأجهزة</span>
+              </button>
+            </div>
+
             {/* PRODUCTS LIST GRID */}
             {loadingProducts ? (
               <div className="flex justify-center py-12">
@@ -834,9 +957,293 @@ export default function AdminPage() {
               }`}>
                 <Package className={`w-12 h-12 mx-auto mb-3 ${darkMode ? 'text-zinc-700' : 'text-gray-300'}`} />
                 <h3 className={`text-base font-bold ${darkMode ? 'text-zinc-200' : 'text-gray-800'}`}>لا يوجد أجهزة في المستودع حالياً</h3>
-                <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">اضغط على زر (إضافة منتج جديد) لإنشاء وتجهيز أول أجهزة الكهربائية في المتجر.</p>
+                <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">تفضل بتعبئة صف الإضافة الفوري في الجدول أو اضغط على (إضافة منتج جديد) للبدء.</p>
+              </div>
+            ) : viewMode === 'quick-table' ? (
+              /* DYNAMIC INLINE SPREADSHEET TABLE EDITING WITH INSTANT FIRESTORE RECONCILIATION */
+              <div className={`border rounded-xl spill-auto transition-all shadow-xs ${
+                darkMode ? 'bg-zinc-900 border-zinc-805' : 'bg-white border-gray-150'
+              }`}>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right border-collapse min-w-[900px]">
+                    <thead>
+                      <tr className={`border-b text-xs font-bold ${
+                        darkMode ? 'bg-zinc-950/40 text-zinc-350 border-zinc-800' : 'bg-slate-50/70 text-gray-600 border-gray-200'
+                      }`}>
+                        <th className="p-3 w-44">اسم الجهاز الكهربائي</th>
+                        <th className="p-3 w-28">الماركة</th>
+                        <th className="p-3 w-40">التصنيف</th>
+                        <th className="p-3 w-28 font-semibold">السعر ({currencyValue === 'دولار' ? '$' : currencyValue === 'ليرة سورية' ? 'ل.س' : 'ر.س'})</th>
+                        <th className="p-3 w-24">الكمية</th>
+                        <th className="p-3">المواصفات الفنية المباشرة</th>
+                        <th className="p-3 w-16 text-center">التوفر</th>
+                        <th className="p-3 w-32 text-center">تحديث فوري</th>
+                        <th className="p-3 w-12 text-center">حذف</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-zinc-850/40 text-xs">
+                      
+                      {/* INTERACTIVE INTEGRATED QUICK-ADD ROW */}
+                      <tr className={` transition-colors ${
+                        darkMode ? 'bg-green-950/10 hover:bg-green-950/15' : 'bg-green-50/15 hover:bg-green-50/30'
+                      }`}>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={quickAddName}
+                            onChange={(e) => setQuickAddName(e.target.value)}
+                            placeholder="مثال: غسالة أتوماتيك LG..."
+                            className={`w-full px-2.5 py-1.5 border rounded-lg text-xs font-medium focus:outline-none focus:ring-1 ${
+                              darkMode 
+                                ? 'bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-green-600 focus:border-green-600' 
+                                : 'bg-white border-gray-200 text-gray-800 focus:ring-green-500 focus:border-green-500'
+                            }`}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={quickAddBrand}
+                            onChange={(e) => setQuickAddBrand(e.target.value)}
+                            placeholder="سوني، إلجي..."
+                            className={`w-full px-2.5 py-1.5 border rounded-lg text-xs font-medium focus:outline-none focus:ring-1 ${
+                              darkMode 
+                                ? 'bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-green-600' 
+                                : 'bg-white border-gray-200 text-gray-800 focus:ring-green-500'
+                            }`}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <select
+                            value={quickAddCategory}
+                            onChange={(e) => setQuickAddCategory(e.target.value)}
+                            className={`w-full px-1.5 py-1.5 border rounded-lg text-xs font-medium focus:outline-none ${
+                              darkMode 
+                                ? 'bg-zinc-950 border-zinc-800 text-zinc-100' 
+                                : 'bg-white border-gray-200 text-gray-800'
+                            }`}
+                          >
+                            <option value="ثلاجات">ثلاجات ومجمدات</option>
+                            <option value="غسالات">غسالات ونشافات</option>
+                            <option value="مكيفات">أجهزة تكييف وتدفئة</option>
+                            <option value="شاشات ورسيفرات">تلفزيونات وشاشات عرض</option>
+                            <option value="ميكروويف وأفران">ميكروويف ومطابخ</option>
+                            <option value="أجهزة صغيرة">أجهزة خلاطات ومكاوٍ وأخرى</option>
+                          </select>
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            value={quickAddPrice || ''}
+                            onChange={(e) => setQuickAddPrice(Number(e.target.value))}
+                            placeholder="0.0"
+                            className={`w-full px-2 py-1.5 border rounded-lg text-xs font-semibold focus:outline-none focus:ring-1 ${
+                              darkMode 
+                                ? 'bg-zinc-950 border-zinc-800 text-zinc-100 focus:ring-green-600' 
+                                : 'bg-white border-gray-200 text-gray-800 focus:ring-green-500'
+                            }`}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            value={quickAddQty}
+                            onChange={(e) => setQuickAddQty(Number(e.target.value))}
+                            placeholder="1"
+                            className={`w-full px-2 py-1.5 border rounded-lg text-xs font-bold focus:outline-none focus:ring-1 ${
+                              darkMode 
+                                ? 'bg-zinc-950 border-zinc-800 text-zinc-100' 
+                                : 'bg-white border-gray-200 text-gray-800'
+                            }`}
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={quickAddDesc}
+                            onChange={(e) => setQuickAddDesc(e.target.value)}
+                            placeholder="موديل، سعة، فترة الكفالة..."
+                            className={`w-full px-2 py-1.5 border rounded-lg text-xs font-medium focus:outline-none focus:ring-1 ${
+                              darkMode 
+                                ? 'bg-zinc-950 border-zinc-800 text-zinc-100' 
+                                : 'bg-white border-gray-200 text-gray-800'
+                            }`}
+                          />
+                        </td>
+                        <td className="p-2 text-center">
+                          <span className="text-[10px] font-black text-green-600 bg-green-50 px-2 py-0.5 rounded-full">نشط</span>
+                        </td>
+                        <td className="p-2 text-center" colSpan={2}>
+                          <button
+                            type="button"
+                            onClick={handleQuickAdd}
+                            disabled={isQuickAdding}
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-extrabold text-[11px] py-1.5 px-3 rounded-lg transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1 active:scale-95 disabled:opacity-40"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>{isQuickAdding ? 'جاري الإضافة...' : 'إضافة للجرد فورا'}</span>
+                          </button>
+                        </td>
+                      </tr>
+
+                      {/* LIVE PRODUCT EDITING STREAMS */}
+                      {products.map((p) => {
+                        const isEdited = modifiedRows[p.id!] !== undefined;
+                        const isSaving = inlineSavingId === p.id;
+                        
+                        return (
+                          <tr key={p.id} className={`hover:bg-slate-50/20 dark:hover:bg-zinc-900/40 transition-all ${
+                            isEdited ? (darkMode ? 'bg-indigo-950/15' : 'bg-indigo-50/20') : ''
+                          }`}>
+                            {/* Device Name input */}
+                            <td className="p-2">
+                              <input
+                                type="text"
+                                value={getCellValue(p, 'name')}
+                                onChange={(e) => handleCellChange(p.id!, 'name', e.target.value)}
+                                className={`w-full px-2 py-1.5 rounded-lg text-xs font-semibold focus:outline-none border border-transparent transition-all ${
+                                  darkMode 
+                                    ? 'hover:border-zinc-700 focus:bg-zinc-950 focus:border-zinc-605 text-zinc-100 bg-transparent' 
+                                    : 'hover:border-gray-250 focus:bg-white focus:border-gray-300 text-gray-800 bg-transparent'
+                                }`}
+                              />
+                            </td>
+
+                            {/* Brand input */}
+                            <td className="p-2">
+                              <input
+                                type="text"
+                                value={getCellValue(p, 'brand')}
+                                onChange={(e) => handleCellChange(p.id!, 'brand', e.target.value)}
+                                className={`w-full px-2 py-1.5 rounded-lg text-xs font-medium focus:outline-none border border-transparent transition-all ${
+                                  darkMode 
+                                    ? 'hover:border-zinc-700 focus:bg-zinc-950 focus:border-zinc-650 text-zinc-100 bg-transparent' 
+                                    : 'hover:border-gray-250 focus:bg-white focus:border-gray-300 text-gray-800 bg-transparent'
+                                }`}
+                              />
+                            </td>
+
+                            {/* Category selector */}
+                            <td className="p-2">
+                              <select
+                                value={getCellValue(p, 'category')}
+                                onChange={(e) => handleCellChange(p.id!, 'category', e.target.value)}
+                                className={`w-full px-1.5 py-1.5 rounded-lg text-xs font-semibold focus:outline-none border border-transparent transition-all ${
+                                  darkMode 
+                                    ? 'hover:border-zinc-700 focus:bg-zinc-950 text-zinc-100 bg-transparent' 
+                                    : 'hover:border-gray-251 focus:bg-white text-gray-800 bg-transparent'
+                                }`}
+                              >
+                                <option value="ثلاجات" className={darkMode ? 'bg-zinc-900' : ''}>ثلاجات ومجمدات</option>
+                                <option value="غسالات" className={darkMode ? 'bg-zinc-900' : ''}>غسالات ونشافات</option>
+                                <option value="مكيفات" className={darkMode ? 'bg-zinc-900' : ''}>أجهزة تكييف وتدفئة</option>
+                                <option value="شاشات ورسيفرات" className={darkMode ? 'bg-zinc-900' : ''}>تلفزيونات وشاشات عرض</option>
+                                <option value="ميكروويف وأفران" className={darkMode ? 'bg-zinc-900' : ''}>ميكروويف ومطابخ</option>
+                                <option value="أجهزة صغيرة" className={darkMode ? 'bg-zinc-900' : ''}>أجهزة خلاطات ومكاوٍ وأخرى</option>
+                              </select>
+                            </td>
+
+                            {/* Price input */}
+                            <td className="p-2">
+                              <input
+                                type="number"
+                                value={getCellValue(p, 'price')}
+                                onChange={(e) => handleCellChange(p.id!, 'price', Number(e.target.value))}
+                                className={`w-full px-2 py-1.5 rounded-lg text-xs font-mono font-bold focus:outline-none border border-transparent transition-all ${
+                                  darkMode 
+                                    ? 'hover:border-zinc-700 focus:bg-zinc-950 focus:border-zinc-605 text-zinc-100 bg-transparent' 
+                                    : 'hover:border-gray-250 focus:bg-white focus:border-gray-300 text-gray-800 bg-transparent'
+                                }`}
+                              />
+                            </td>
+
+                            {/* Quantity input */}
+                            <td className="p-2">
+                              <input
+                                type="number"
+                                value={getCellValue(p, 'quantity')}
+                                onChange={(e) => handleCellChange(p.id!, 'quantity', Number(e.target.value))}
+                                className={`w-full px-2 py-1.5 rounded-lg text-xs font-mono font-bold focus:outline-none border border-transparent transition-all ${
+                                  darkMode 
+                                    ? 'hover:border-zinc-700 focus:bg-zinc-950 focus:border-zinc-605 text-zinc-100 bg-transparent' 
+                                    : 'hover:border-gray-250 focus:bg-white focus:border-gray-300 text-gray-800 bg-transparent'
+                                }`}
+                              />
+                            </td>
+
+                            {/* Spec/description input */}
+                            <td className="p-2">
+                              <input
+                                type="text"
+                                value={getCellValue(p, 'description') || ''}
+                                onChange={(e) => handleCellChange(p.id!, 'description', e.target.value)}
+                                className={`w-full px-2 py-1.5 rounded-lg text-xs font-medium focus:outline-none border border-transparent transition-all ${
+                                  darkMode 
+                                    ? 'hover:border-zinc-700 focus:bg-zinc-950 focus:border-zinc-650 text-zinc-100 bg-transparent' 
+                                    : 'hover:border-gray-250 focus:bg-white focus:border-gray-300 text-gray-800 bg-transparent'
+                                }`}
+                              />
+                            </td>
+
+                            {/* Available checkbox */}
+                            <td className="p-2 text-center">
+                              <input
+                                type="checkbox"
+                                checked={getCellValue(p, 'isAvailable')}
+                                onChange={(e) => handleCellChange(p.id!, 'isAvailable', e.target.checked)}
+                                className={`w-4 h-4 rounded cursor-pointer transition-transform active:scale-95 ${
+                                  darkMode ? 'bg-zinc-950 border-zinc-700 text-white' : 'text-black border-gray-300'
+                                }`}
+                              />
+                            </td>
+
+                            {/* Live Fire sync control */}
+                            <td className="p-2 text-center">
+                              {isEdited ? (
+                                <button
+                                  type="button"
+                                  onClick={() => saveRowInline(p)}
+                                  disabled={isSaving}
+                                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black py-1.5 px-2 rounded-lg shadow-md cursor-pointer transition-all flex items-center justify-center gap-1 active:scale-95"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  <span>{isSaving ? 'حفظ...' : 'تحديث فوري'}</span>
+                                </button>
+                              ) : (
+                                <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${
+                                  darkMode ? 'text-zinc-500 bg-zinc-950/20' : 'text-gray-400 bg-neutral-50/40'
+                                }`}>
+                                  محفوظ بالكامل ✔
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Delete inline button */}
+                            <td className="p-2 text-center">
+                              <button
+                                type="button"
+                                onClick={() => deleteProductItem(p.id)}
+                                className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                                  darkMode 
+                                    ? 'bg-zinc-800 border-zinc-750 text-zinc-400 hover:text-red-400 hover:border-red-900 bg-zinc-950/35' 
+                                    : 'bg-white border-gray-200 text-gray-400 hover:text-red-600 hover:bg-red-50/20 hover:border-red-150'
+                                }`}
+                                title="مسح من مستودع المتجر"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+
+                          </tr>
+                        );
+                      })}
+
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : (
+              /* CARD GRID VIEW */
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {products.map((p) => (
                   <div key={p.id} className={`border rounded overflow-hidden flex flex-col transition-all ${
@@ -862,7 +1269,7 @@ export default function AdminPage() {
                       </span>
                     </div>
 
-                    <div className="p-4 flex-1 flex flex-col justify-between">
+                    <div className="p-4 flex-1 flex flex-col justify-between font-sans">
                       <div>
                         <div className={`flex items-center gap-1.5 text-[10px] font-bold block mb-1 ${
                           darkMode ? 'text-zinc-550' : 'text-neutral-400'

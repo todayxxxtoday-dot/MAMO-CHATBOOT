@@ -137,27 +137,46 @@ export default function App() {
               transition={{ delay: 0.15 }}
               className="p-6 border border-gray-150 rounded-xl bg-neutral-50/50 flex flex-col md:flex-row items-center gap-6 justify-center md:text-right shadow-sm"
             >
-              <div className="bg-white p-3 border border-gray-200 rounded-lg shrink-0 shadow-inner relative mx-auto">
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/chat')}&color=${(settings?.botPrimaryColor || '#800020').replace('#', '')}&bgcolor=ffffff&qzone=1`}
-                  alt="Store Chatbot Barcode"
-                  className="w-28 h-28 object-contain"
-                />
-                {/* Center branding badge with store name inside */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div 
-                    className="bg-white border rounded px-1.5 py-0.5 shadow-md flex items-center justify-center select-none max-w-[58px] overflow-hidden" 
-                    style={{ borderColor: settings?.botPrimaryColor || '#800020' }}
-                  >
-                    <span 
-                      className="text-[7px] font-extrabold tracking-tight truncate leading-none text-center block w-full" 
-                      style={{ color: settings?.botPrimaryColor || '#800020' }}
+              {/* Premium Integrated Ticket/Barcode Frame */}
+              <div className="bg-white p-4 border border-gray-200 rounded-2xl shrink-0 shadow-md relative mx-auto flex flex-col items-center gap-2">
+                {/* Store Name Badge - acts as the header of the barcode ticket */}
+                <div 
+                  className="text-[9px] font-extrabold px-3 py-1 rounded-full text-white tracking-wide max-w-[140px] truncate block shadow-xs"
+                  style={{ backgroundColor: settings?.botPrimaryColor || '#800020' }}
+                >
+                  {settings?.storeName || 'الأجهزة المنزلية'}
+                </div>
+
+                <div className="relative bg-white p-1 rounded-lg">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/chat')}&color=${(settings?.botPrimaryColor || '#800020').replace('#', '')}&bgcolor=ffffff&qzone=1`}
+                    alt="Store Chatbot Barcode"
+                    className="w-28 h-28 object-contain"
+                  />
+                  {/* Center branding circle tightly aligned as part of the QR code */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div 
+                      className="bg-white border-2 rounded-full w-9 h-9 shadow-md flex items-center justify-center select-none" 
+                      style={{ borderColor: settings?.botPrimaryColor || '#800020' }}
                     >
-                      {settings?.storeName ? settings.storeName.split(' ')[0] : 'مامو'}
-                    </span>
+                      <span 
+                        className="text-[8px] font-black tracking-tighter truncate leading-none text-center block w-full px-0.5" 
+                        style={{ color: settings?.botPrimaryColor || '#800020' }}
+                      >
+                        {settings?.storeName ? settings.storeName.substring(0, 5) : 'MAMO'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Simulated barcode serial ticket text */}
+                <div className="w-full flex flex-col items-center gap-0.5 pt-1.5 border-t border-gray-100">
+                  <div className="font-mono text-[8px] tracking-[0.25em] text-gray-400 font-extrabold select-none">
+                    * MAMO-{settings?.storeName ? settings.storeName.split(' ')[0].toUpperCase() : 'CHAT'} *
                   </div>
                 </div>
               </div>
+
               <div className="space-y-3 flex-1 text-center md:text-right">
                 <h3 className="text-base font-extrabold text-gray-900 font-sans leading-snug">
                   امسح الباركود لتجربة الشات على هاتفك فوراً
