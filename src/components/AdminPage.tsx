@@ -53,6 +53,8 @@ export default function AdminPage() {
   const [botTextColorValue, setBotTextColorValue] = useState('#ffffff');
   const [botInstructionsValue, setBotInstructionsValue] = useState('');
   const [botWelcomeMessageValue, setBotWelcomeMessageValue] = useState('');
+  const [botEmployeeNameValue, setBotEmployeeNameValue] = useState('سارة (ممثلة المبيعات)');
+  const [botResponseSpeedValue, setBotResponseSpeedValue] = useState('medium');
   const [loadingSettings, setLoadingSettings] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -163,9 +165,11 @@ export default function AdminPage() {
         setBotTextColorValue(data.botTextColor || '#ffffff');
         setBotInstructionsValue(data.botInstructions || '');
         setBotWelcomeMessageValue(data.botWelcomeMessage || '');
+        setBotEmployeeNameValue(data.botEmployeeName || 'سارة (ممثلة المبيعات)');
+        setBotResponseSpeedValue(data.botResponseSpeed || 'medium');
       } else {
         // Instantiate defaults if settings doesn't exist
-        setStoreNameValue('متجر الأجهزة المنزلية والكهربائية');
+        setStoreNameValue('شركة مامو للأجهزة المنزلية والكهربائية');
         setLogoUrlValue('');
         setLocationValue('الرياض، المملكة العربية السعودية');
         setWhatsappValue('966500000000');
@@ -173,8 +177,10 @@ export default function AdminPage() {
         setEmailValue('info@store.com');
         setBotPrimaryColorValue('#800020');
         setBotTextColorValue('#ffffff');
-        setBotWelcomeMessageValue('مرحباً بك في متجر الأجهزة المنزلية والكهربائية الذكي! كيف يمكنني مساعدتكم اليوم في تصفح الأجهزة المتوفرة والأسعار؟');
+        setBotWelcomeMessageValue('مرحباً بك في شركة مامو للأجهزة المنزلية والكهربائية الذكية! كيف يمكنني مساعدتكم اليوم في تصفح الأجهزة المتوفرة والأسعار؟');
         setBotInstructionsValue('يرجى الالتزام بالرد على الأسئلة المتعلقة بأسعار وتوفر الأجهزة المنزلية، وتجنب الإجابة على أي أسئلة خارج نطاق ذلك.');
+        setBotEmployeeNameValue('سارة (ممثلة المبيعات)');
+        setBotResponseSpeedValue('medium');
       }
       setLoadingSettings(false);
     }, (error) => {
@@ -201,6 +207,8 @@ export default function AdminPage() {
         botTextColor: botTextColorValue.trim(),
         botInstructions: botInstructionsValue.trim(),
         botWelcomeMessage: botWelcomeMessageValue.trim(),
+        botEmployeeName: botEmployeeNameValue.trim(),
+        botResponseSpeed: botResponseSpeedValue.trim(),
         updatedAt: new Date().toISOString()
       });
       alert('تم حفظ إعدادات المتجر والشات بوت بنجاح!');
@@ -1275,6 +1283,41 @@ export default function AdminPage() {
                             }`}
                           />
                         </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>اسم الموظف أو الموظفة الافتراضي (اسم البوت)</label>
+                        <input
+                          type="text"
+                          value={botEmployeeNameValue}
+                          onChange={(e) => setBotEmployeeNameValue(e.target.value)}
+                          placeholder="مثال: سارة (ممثلة المبيعات) أو أحمد"
+                          className={`w-full px-3 py-1.5 border rounded text-xs focus:outline-none transition-all ${
+                            darkMode 
+                              ? 'bg-zinc-950 border-zinc-800 text-zinc-150 focus:border-zinc-700' 
+                              : 'bg-white border-gray-200 text-gray-950 focus:border-black'
+                          }`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className={`block text-[11px] font-bold mb-1.5 ${darkMode ? 'text-zinc-300' : 'text-gray-600'}`}>سرعة استجابة الرد الآلي في المحادثة</label>
+                        <select
+                          value={botResponseSpeedValue}
+                          onChange={(e) => setBotResponseSpeedValue(e.target.value)}
+                          className={`w-full px-3 py-1.5 border rounded text-xs focus:outline-none transition-all ${
+                            darkMode 
+                              ? 'bg-zinc-950 border-zinc-800 text-zinc-150 focus:border-zinc-700' 
+                              : 'bg-white border-gray-200 text-gray-950 focus:border-black'
+                          }`}
+                        >
+                          <option value="instant">تلقائية وفورية (بدون انتظار)</option>
+                          <option value="fast">سريعة جداً (حوالي ثانية واحدة)</option>
+                          <option value="medium">طبيعية ومتوسطة (حوالي ثانيتين)</option>
+                          <option value="slow">متأنية وهادئة (حوالي 3.5 ثانية)</option>
+                        </select>
                       </div>
                     </div>
 

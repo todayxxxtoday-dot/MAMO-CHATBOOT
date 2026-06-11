@@ -80,7 +80,7 @@ export default function App() {
           <div className="inline-flex w-10 h-10 bg-black rounded items-center justify-center mx-auto shadow-sm">
             <div className="w-5 h-5 border-2 border-white"></div>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">بوابة إدارة والمتحدث الذكي للمتجر</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">بوابة إدارة والرد الذكي للشركة</h1>
           <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
             تطبيق متكامل وبسيط مدعوم بالذكاء الاصطناعي لمتابعة وتحديث مخزون الأواني والأجهزة الكهربائية في الوقت الفعلي.
           </p>
@@ -101,7 +101,7 @@ export default function App() {
               </div>
               <h2 className="text-base font-bold text-gray-900">مساعد خدمة العملاء</h2>
               <p className="text-xs text-gray-500 leading-relaxed">
-                افتح صفحة الشات للتواصل الفوري وطرح الأسئلة الذكية حول الأجهزة وأسعارها وتوفرها بالمتجر.
+                افتح صفحة الشات للتواصل الفوري وطرح الأسئلة الذكية حول الأجهزة وأسعارها وتوفرها بالشركة.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between text-xs font-bold text-black">
@@ -160,7 +160,7 @@ export default function App() {
             </div>
             <h3 className="text-sm font-bold text-gray-900 font-sans">امسح الباركود لتجربة الشات بوت فوراً على الهاتف</h3>
             <p className="text-xs text-gray-500 leading-relaxed font-sans">
-              عند تصوير هذا الباركود بآلة تصوير الجوال، ستفتح لك نافذة المحادثة الذكية لـ <strong style={{ color: settings?.botPrimaryColor || '#800020' }}>{settings?.storeName ?? 'المتجر الذكي للأجهزة المنزلية'}</strong> مباشرة المخصصة للتصفح والاستفسار عن الأسعار دون الدخول إلى لوحة التحكم.
+              عند تصوير هذا الباركود بآلة تصوير الجوال، ستفتح لك نافذة المحادثة الذكية لـ <strong style={{ color: settings?.botPrimaryColor || '#800020' }}>{settings?.storeName ?? 'شركة مامو للأجهزة المنزلية والكهربائية'}</strong> مباشرة المخصصة للتصفح والاستفسار عن الأسعار دون الدخول إلى لوحة التحكم.
             </p>
             <div className="pt-1.5 flex justify-end md:justify-start">
               <button
