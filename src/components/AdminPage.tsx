@@ -31,6 +31,20 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+const getCleanQrName = (storeName?: string) => {
+  if (!storeName) return 'MAMO';
+  // Remove company, store and other commercial designation words
+  const clean = storeName
+    .replace(/(شركة|متجر|معرض|صالة|مؤسسة|محلات|محل|مركز|وكالة|جروب|مجموعة)\s+/gi, '')
+    .trim();
+  if (!clean) return 'MAMO';
+  const word = clean.split(' ')[0];
+  if (/(شركة|متجر|معرض|صالة|مؤسسة|محلات|محل|مركز|وكالة|جروب|مجموعة)/.test(word)) {
+    return 'MAMO';
+  }
+  return word ? word.substring(0, 10).toUpperCase() : 'MAMO';
+};
+
 export default function AdminPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -2259,17 +2273,16 @@ export default function AdminPage() {
                           alt="Store Chatbot QR Code"
                           className="w-36 h-36 object-contain mx-auto transition-transform duration-200"
                         />
-                        {/* Center branding badge tightly integrated as a native part of the QR code */}
+                        {/* Center branding badge tightly integrated as a native part of the QR code (flat, borderless pixel integration) */}
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
                           <div 
-                            className="bg-white border-3 rounded-md w-[48px] h-[48px] flex flex-col items-center justify-center text-center px-0.5" 
-                            style={{ borderColor: botPrimaryColorValue }}
+                            className="bg-white w-[54px] h-[38px] flex flex-col items-center justify-center text-center px-0.5 border-0 shadow-none" 
                           >
                             <span 
-                              className="text-[8px] font-black tracking-tighter uppercase leading-none text-center block max-w-full truncate px-0.5" 
+                              className="text-[10.5px] font-mono font-black tracking-widest uppercase leading-none text-center block max-w-full truncate" 
                               style={{ color: botPrimaryColorValue }}
                             >
-                              {storeNameValue ? storeNameValue.split(' ')[0] : 'MAMO'}
+                              {getCleanQrName(storeNameValue)}
                             </span>
                           </div>
                         </div>

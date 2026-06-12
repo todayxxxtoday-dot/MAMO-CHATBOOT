@@ -579,10 +579,9 @@ export default function ChatPage() {
             <button
               onClick={() => setShowBugModal(true)}
               title="إبلاغ عن خطأ أو مشكلة فنية"
-              className="p-1.5 px-3 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 hover:text-amber-800 transition-all flex items-center gap-1 cursor-pointer shrink-0"
+              className="p-2 text-amber-750 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-all flex items-center justify-center cursor-pointer shrink-0"
             >
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-              <span>إبلاغ عن خطأ</span>
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
             </button>
           </div>
         </div>

@@ -101,6 +101,21 @@ function getSmartFallbackReply(userMessage: string, productsList: any[], storeSe
   
   const msgLower = userMessage.toLowerCase().trim();
 
+  // Developer / Creator identification query matching
+  const isDevKeywords = [
+    'من صنعك', 'من طورك', 'من برمجك', 'من سواك', 'مين عملك', 'مين طورك', 'مين برمجك', 'من المبرمج',
+    'من المطور', 'مين المبرمج', 'مين المطور', 'من صنع هذا البوت', 'من برمج هذا البوت', 'من طور هذا البوت',
+    'صانع البوت', 'مبرمج البوت', 'مطور البوت', 'صانع المساعد', 'مبرمج المساعد', 'مطور المساعد',
+    'من صممك', 'مين صممك', 'من صمم هذا البوت', 'مين صمم هذا البوت', 'مبرمجك', 'صانعك', 'مطورك',
+    'من صنع المساعد', 'من برمج المساعد', 'من طور المساعد', 'من هو مطورك', 'من هو مبرمجك'
+  ].some(kw => msgLower.includes(kw)) || 
+  /(من\s+)?(برمج|طوّر|صنع|صمّم|أنشأ|عمل)\s+(البوت|المساعد|الذكاء|النظام|هذا)/.test(msgLower) ||
+  /برمجك|صنعك|طوّرك|مطورك|مبرمجك|صانعك/.test(msgLower);
+
+  if (isDevKeywords) {
+    return 'لقد تم تطويري وتصميمي وبرمجتي بالكامل بواسطة الأخ المبدع والكريم "أبو لؤي" حفظه الله ورعاه، لخدمتكم بأحدث تقنيات الذكاء الاصطناعي التفاعلية.';
+  }
+
   // 1. GREETINGS
   if (/^(مرحبا|مرحباً|السلام|سلام|أهلاً|اهلا|صباح|مساء|كيف الحال|مرحبتين|مرحبا بك|أهلين|اهلين)/.test(msgLower)) {
     return `أهلاً ومرحباً بكم في ${businessType} "${storeName}" للأجهزة المنزلية والكهربائية. يسعدنا جداً الرد على استفساراتكم ومساعدتكم في تصفح عروضنا الرائعة والأجهزة المتاحة بالمستودعات بأسعارها الحالية. كيف يمكننا خدمتكم اليوم؟`;
@@ -321,19 +336,38 @@ ${knowledgeBase ? `قاعدة المعرفة والمعلومات الحقيقي
     }
 
     const lastUserQuery = sortedHistory.filter((m: any) => m && m.sender === 'user').pop()?.text || 'مرحباً';
+    const msgLower = lastUserQuery.trim().toLowerCase();
+
+    // Direct super-fast interceptor for developer / creator identification queries to guarantee speed & consistency
+    const isDevQuery = [
+      'من صنعك', 'من طورك', 'من برمجك', 'من سواك', 'مين عملك', 'مين طورك', 'مين برمجك', 'من المبرمج',
+      'من المطور', 'مين المبرمج', 'مين المطور', 'من صنع هذا البوت', 'من برمج هذا البوت', 'من طور هذا البوت',
+      'صانع البوت', 'مبرمج البوت', 'مطور البوت', 'صانع المساعد', 'مبرمج المساعد', 'مطور المساعد',
+      'من صممك', 'مين صممك', 'من صمم هذا البوت', 'مين صمم هذا البوت', 'مبرمجك', 'صانعك', 'مطورك',
+      'من صنع المساعد', 'من برمج المساعد', 'من طور المساعد', 'من هو مطورك', 'من هو مبرمجك'
+    ].some(kw => msgLower.includes(kw)) || 
+    /(من\s+)?(برمج|طوّر|صنع|صمّم|أنشأ|عمل)\s+(البوت|المساعد|الذكاء|النظام|هذا)/.test(msgLower) ||
+    /برمجك|صنعك|طوّرك|مطورك|مبرمجك|صانعك/.test(msgLower);
+
+    if (isDevQuery) {
+      console.log('Developer query intercepted. Returning premium developer attribution instantly.');
+      return res.json({ 
+        text: 'لقد تم تطويري وتصميمي وبرمجتي بالكامل بواسطة الأخ المبدع والكريم "أبو لؤي" حفظه الله ورعاه، لخدمتكم بأحدث تقنيات الذكاء الاصطناعي التفاعلية.' 
+      });
+    }
 
     let replyText = '';
     const aiClient = getGeminiClient();
 
     if (aiClient) {
       try {
-        console.log('Attempting primary Gemini call using model gemini-3.5-flash...');
+        console.log('Attempting primary Gemini call using model gemini-3.5-flash with low latency configuration...');
         const response = await aiClient.models.generateContent({
           model: 'gemini-3.5-flash',
           contents: formattedContents,
           config: {
-            systemInstruction: systemInstruction + '\n⚠️ تنبيه هام لسرعة فائقة وسياق دقيق: يجب أن تكون الإجابات موضوعية، مباشرة، لبقة، ومقنعة جداً للعميل في حدود سطرين إلى 3 أسطر فقط كحد أقصى، وباللغة العربية الفصحى الفائقة والواضحة.',
-            temperature: 0.3,
+            systemInstruction: systemInstruction + '\n⚠️ تنبيه هام لسرعة فائقة وسياق دقيق: يجب أن تكون الإجابات موضوعية، مباشرة، لبقة، ومقنعة جداً للعميل في حدود سطرين إلى 3 أسطر فقط كحد أقصى، وباللغة العربية الفصحى الفائقة والواضحة.\nإذا كان السؤال يتعلق بمطورك أو صانعك فالمبرمج هو "الأخ أبو لؤي".',
+            temperature: 0.1, // Set lower temperature for higher speed, focus, and logical determinism
             maxOutputTokens: 250
           }
         });

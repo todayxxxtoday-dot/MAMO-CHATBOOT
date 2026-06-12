@@ -6,6 +6,20 @@ import { motion } from 'motion/react';
 import { db } from './firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 
+const getCleanQrName = (storeName?: string) => {
+  if (!storeName) return 'MAMO';
+  // Remove company, store and other commercial designation words
+  const clean = storeName
+    .replace(/(شركة|متجر|معرض|صالة|مؤسسة|محلات|محل|مركز|وكالة|جروب|مجموعة)\s+/gi, '')
+    .trim();
+  if (!clean) return 'MAMO';
+  const word = clean.split(' ')[0];
+  if (/(شركة|متجر|معرض|صالة|مؤسسة|محلات|محل|مركز|وكالة|جروب|مجموعة)/.test(word)) {
+    return 'MAMO';
+  }
+  return word ? word.substring(0, 10).toUpperCase() : 'MAMO';
+};
+
 export default function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [settings, setSettings] = useState<any>(null);
@@ -173,17 +187,16 @@ export default function App() {
                     alt="Store Chatbot Barcode"
                     className="w-28 h-28 object-contain"
                   />
-                  {/* Center branding badge tightly integrated as a native part of the QR code */}
+                  {/* Center branding badge tightly integrated as a native part of the QR code (no curves, zero outer borders, blended as blocks) */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
                     <div 
-                      className="bg-white border-3 rounded-md w-[42px] h-[42px] flex flex-col items-center justify-center text-center px-0.5" 
-                      style={{ borderColor: settings?.botPrimaryColor || '#800020' }}
+                      className="bg-white w-[50px] h-[34px] flex flex-col items-center justify-center text-center px-0.5 border-0 shadow-none" 
                     >
                       <span 
-                        className="text-[7.5px] font-black tracking-tighter uppercase leading-none text-center block max-w-full truncate px-0.5" 
+                        className="text-[10px] font-mono font-black tracking-widest uppercase leading-none text-center block max-w-full truncate" 
                         style={{ color: settings?.botPrimaryColor || '#800020' }}
                       >
-                        {settings?.storeName ? settings.storeName.split(' ')[0] : 'MAMO'}
+                        {getCleanQrName(settings?.storeName)}
                       </span>
                     </div>
                   </div>
@@ -192,7 +205,7 @@ export default function App() {
                 {/* Simulated barcode serial ticket text */}
                 <div className="w-full flex flex-col items-center gap-0.5 pt-1.5 border-t border-gray-100">
                   <div className="font-mono text-[8px] tracking-[0.25em] text-gray-400 font-extrabold select-none">
-                    * MAMO-{settings?.storeName ? settings.storeName.split(' ')[0].toUpperCase() : 'CHAT'} *
+                    * MAMO-{getCleanQrName(settings?.storeName)} *
                   </div>
                 </div>
               </div>
